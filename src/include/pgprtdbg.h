@@ -1,0 +1,128 @@
+/*
+ * Copyright (C) 2019 Red Hat
+ * 
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ * 
+ * 1. Redistributions of source code must retain the above copyright notice, this list
+ * of conditions and the following disclaimer.
+ * 
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this
+ * list of conditions and the following disclaimer in the documentation and/or other
+ * materials provided with the distribution.
+ * 
+ * 3. Neither the name of the copyright holder nor the names of its contributors may
+ * be used to endorse or promote products derived from this software without specific
+ * prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
+ * THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+ * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#ifndef PGPRTDBG_H
+#define PGPRTDBG_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <ev.h>
+#include <semaphore.h>
+#include <stdatomic.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <sys/types.h>
+
+#define VERSION "0.1.0"
+
+/* Setup zf_log to include DEBUG support even for release builds */
+#ifdef DEBUG
+#define ZF_LOG_LEVEL ZF_LOG_VERBOSE
+#else
+#define ZF_LOG_LEVEL ZF_LOG_DEBUG
+#endif
+
+#define MAX_BUFFER_SIZE      65535
+#define DEFAULT_BUFFER_SIZE  65535
+
+#define IDENTIFIER_LENGTH 64
+#define MISC_LENGTH 128
+
+#define MAX_NUMBER_OF_CONNECTIONS 1000
+
+#define likely(x)    __builtin_expect (!!(x), 1)
+#define unlikely(x)  __builtin_expect (!!(x), 0)
+
+/** @struct
+ * Defines a server
+ */
+struct server
+{
+   char name[MISC_LENGTH]; /**< The name of the server */
+   char host[MISC_LENGTH]; /**< The host name of the server */
+   int port;               /**< The port of the server */
+} __attribute__ ((aligned (64)));
+
+/** @struct
+ * Defines the configuration and state of pgprtdbg
+ */
+struct configuration
+{
+   char host[MISC_LENGTH]; /**< The host */
+   int port;               /**< The port */
+
+   char output[MISC_LENGTH]; /**< The output path */
+   FILE* file;               /**< The file */
+   sem_t lock;               /**< The file lock */
+
+   int log_type;               /**< The logging type */
+   int log_level;              /**< The logging level */
+   char log_path[MISC_LENGTH]; /**< The logging path */
+
+   char libev[MISC_LENGTH]; /**< Name of libev mode */
+   int buffer_size;         /**< Socket buffer size */
+   bool keep_alive;         /**< Use keep alive */
+   bool nodelay;            /**< Use NODELAY */
+   bool non_blocking;       /**< Use non blocking */
+   int backlog;             /**< The backlog for listen */
+
+   atomic_ushort active_connections;      /**< The active number of connections */
+   pid_t pids[MAX_NUMBER_OF_CONNECTIONS]; /**< The PIDS of the connections */
+
+   struct server server[1]; /**< The server */
+} __attribute__ ((aligned (64)));
+
+/** @struct
+ * Defines a message
+ */
+struct message
+{
+   signed char kind;  /**< The kind of the message */
+   ssize_t length;    /**< The length of the message */
+   size_t max_length; /**< The maximum size of the message */
+   void* data;        /**< The message data */
+} __attribute__ ((aligned (64)));
+
+/** @struct
+ * Defines the signal structure
+ */
+struct signal_info
+{
+   struct ev_signal signal; /**< The libev base type */
+   void* shmem;             /**< The shared memory segment */
+};
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
