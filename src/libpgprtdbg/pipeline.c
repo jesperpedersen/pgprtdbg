@@ -33,7 +33,7 @@
 #include <protocol.h>
 #include <worker.h>
 
-#define ZF_LOG_TAG "pipeline_perf"
+#define ZF_LOG_TAG "pipeline"
 #include <zf_log.h>
 
 /* system */
