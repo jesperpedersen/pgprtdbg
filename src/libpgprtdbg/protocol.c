@@ -309,8 +309,12 @@ fe_Q(struct message* msg, char** text)
 static int
 fe_p(struct message* msg, char** text)
 {
+   int32_t length;
+
+   length = pgprtdbg_read_int32(msg->data + 1);
+
    ZF_LOGV("FE: p");
-   ZF_LOGV("Data: %s", pgprtdbg_read_string(msg->data + 5));
+   ZF_LOGV_MEM(msg->data + 5, length, "Data: %p", (const void *)msg->data + 5);
 
    return msg->length;
 }
@@ -476,6 +480,7 @@ be_R(struct message* msg, int offset, char** text)
             ZF_LOGV("             %s", mechanism);
             offset += strlen(mechanism) + 1;
          }
+         offset += 1;
          break;
       case 11:
          ZF_LOGV("BE: R - SASLContinue");
