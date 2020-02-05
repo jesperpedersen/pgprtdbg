@@ -50,6 +50,8 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
 
    wi = (struct worker_io*)watcher;
 
+   ZF_LOGV("pipeline_client: %d", revents);
+
    status = pgprtdbg_read_message(wi->client_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
    {
@@ -61,7 +63,7 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
       {
          ZF_LOGD("Read %d from %d (%zd)", msg->kind, wi->client_fd, msg->length);
       }
-      pgprtdbg_process("C", wi->shmem, msg);
+      pgprtdbg_process("C", wi->client_fd, wi->server_fd, wi->shmem, msg);
 
       status = pgprtdbg_write_message(wi->server_fd, msg);
       if (unlikely(status != MESSAGE_STATUS_OK))
@@ -80,21 +82,38 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
       goto client_error;
    }
 
-   ev_break (loop, EVBREAK_ONE);
+   ZF_LOGV("pipeline_client: Done");
+   ev_break(loop, EVBREAK_ONE);
    return;
 
 client_error:
-   ZF_LOGD("client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
+   if (errno != 0)
+   {
+      ZF_LOGE("client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
+   }
+   else
+   {
+      ZF_LOGE("client_error: client_fd %d (%d)", wi->client_fd, status);
+   }
 
-   ev_break (loop, EVBREAK_ONE);
+   errno = 0;
+   ev_break(loop, EVBREAK_ALL);
    exit_code = WORKER_CLIENT_FAILURE;
    running = 0;
    return;
 
 server_error:
-   ZF_LOGD("server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
+   if (errno != 0)
+   {
+      ZF_LOGE("server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
+   }
+   else
+   {
+      ZF_LOGE("server_error: server_fd %d (%d)", wi->server_fd, status);
+   }
 
-   ev_break (loop, EVBREAK_ONE);
+   errno = 0;
+   ev_break(loop, EVBREAK_ALL);
    exit_code = WORKER_SERVER_FAILURE;
    running = 0;
    return;
@@ -110,6 +129,8 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
 
    wi = (struct worker_io*)watcher;
 
+   ZF_LOGV("pipeline_server: %d", revents);
+
    status = pgprtdbg_read_message(wi->server_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
    {
@@ -121,7 +142,7 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
       {
          ZF_LOGD("Read %d from %d (%zd)", msg->kind, wi->server_fd, msg->length);
       }
-      pgprtdbg_process("S", wi->shmem, msg);
+      pgprtdbg_process("S", wi->server_fd, wi->client_fd, wi->shmem, msg);
 
       status = pgprtdbg_write_message(wi->client_fd, msg);
       if (unlikely(status != MESSAGE_STATUS_OK))
@@ -136,6 +157,12 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
          if (!strncmp(msg->data + 6, "FATAL", 5) || !strncmp(msg->data + 6, "PANIC", 5))
             fatal = true;
 
+         if (!strncmp(msg->data + 20, "0A000", 5))
+         {
+            ZF_LOGD("FOUND");
+            fatal = false;
+         }
+
          if (fatal)
          {
             exit_code = WORKER_SERVER_FATAL;
@@ -148,21 +175,38 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
       goto server_error;
    }
 
-   ev_break (loop, EVBREAK_ONE);
+   ZF_LOGV("pipeline_server: Done");
+   ev_break(loop, EVBREAK_ONE);
    return;
 
 client_error:
-   ZF_LOGD("client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
+   if (errno != 0)
+   {
+      ZF_LOGE("client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
+   }
+   else
+   {
+      ZF_LOGE("client_error: client_fd %d (%d)", wi->client_fd, status);
+   }
 
-   ev_break (loop, EVBREAK_ONE);
+   errno = 0;
+   ev_break(loop, EVBREAK_ALL);
    exit_code = WORKER_CLIENT_FAILURE;
    running = 0;
    return;
 
 server_error:
-   ZF_LOGD("server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
+   if (errno != 0)
+   {
+      ZF_LOGE("server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
+   }
+   else
+   {
+      ZF_LOGE("server_error: server_fd %d (%d)", wi->server_fd, status);
+   }
 
-   ev_break (loop, EVBREAK_ONE);
+   errno = 0;
+   ev_break(loop, EVBREAK_ALL);
    exit_code = WORKER_SERVER_FAILURE;
    running = 0;
    return;

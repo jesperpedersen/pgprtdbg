@@ -84,6 +84,8 @@ struct configuration
    FILE* file;               /**< The file */
    sem_t lock;               /**< The file lock */
 
+   bool output_sockets;      /**< Output socket identifiers */
+
    int log_type;               /**< The logging type */
    int log_level;              /**< The logging level */
    char log_path[MISC_LENGTH]; /**< The logging path */

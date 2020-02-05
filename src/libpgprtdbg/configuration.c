@@ -59,6 +59,8 @@ pgprtdbg_init_configuration(void* shmem, size_t size)
    config = (struct configuration*)shmem;
    memset(config, 0, size);
 
+   config->output_sockets = false;
+
    config->buffer_size = DEFAULT_BUFFER_SIZE;
    config->keep_alive = true;
    config->nodelay = true;
@@ -201,6 +203,17 @@ pgprtdbg_read_configuration(char* filename, void* shmem)
                      if (max > MISC_LENGTH - 1)
                         max = MISC_LENGTH - 1;
                      memcpy(config->output, value, max);
+                  }
+                  else
+                  {
+                     unknown = true;
+                  }
+               }
+               else if (!strcmp(key, "output_sockets"))
+               {
+                  if (!strcmp(section, "pgprtdbg"))
+                  {
+                     config->output_sockets = as_bool(value);
                   }
                   else
                   {

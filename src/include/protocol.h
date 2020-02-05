@@ -40,11 +40,13 @@ extern "C" {
 /**
  * Decode a message
  * @param id The identifier
+ * @param from The from socket
+ * @param to The to socket
  * @param shmem The shared memory segment
  * @param msg The message
  */
 void
-pgprtdbg_process(char* id, void* shmem, struct message* msg);
+pgprtdbg_process(char* id, int from, int to, void* shmem, struct message* msg);
 
 #ifdef __cplusplus
 }

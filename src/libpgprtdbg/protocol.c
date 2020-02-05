@@ -45,7 +45,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-static void output_write(char* id, void* shmem, signed char kind, char* text);
+static void output_write(char* id, int from, int to, void* shmem, signed char kind, char* text);
 
 static int fe_zero(struct message* msg, char** text);
 static int fe_Q(struct message* msg, char** text);
@@ -66,7 +66,7 @@ static int be_Z(struct message* msg, int offset, char** text);
  *
  */
 void
-pgprtdbg_process(char* id, void* shmem, struct message* msg)
+pgprtdbg_process(char* id, int from, int to, void* shmem, struct message* msg)
 {
    char* text = NULL;
    signed char kind;
@@ -142,14 +142,14 @@ pgprtdbg_process(char* id, void* shmem, struct message* msg)
             break;
       }
 
-      output_write(id, shmem, kind, text);
+      output_write(id, from, to, shmem, kind, text);
       free(text);
       text = NULL;
    }
 }
 
 static void
-output_write(char* id, void* shmem, signed char kind, char* text)
+output_write(char* id, int from, int to, void* shmem, signed char kind, char* text)
 {
    char line[MISC_LENGTH];
    struct configuration* config;
@@ -163,22 +163,50 @@ output_write(char* id, void* shmem, signed char kind, char* text)
    {
       if (text != NULL)
       {
-         snprintf(&line[0], sizeof(line), "%s,%c,%s\n", id, kind, text);
+         if (config->output_sockets)
+         {
+            snprintf(&line[0], sizeof(line), "%s,%d,%d,%c,%s\n", id, from, to, kind, text);
+         }
+         else
+         {
+            snprintf(&line[0], sizeof(line), "%s,%c,%s\n", id, kind, text);
+         }
       }
       else
       {
-         snprintf(&line[0], sizeof(line), "%s,%c\n", id, kind);
+         if (config->output_sockets)
+         {
+            snprintf(&line[0], sizeof(line), "%s,%d,%d,%c\n", id, from, to, kind);
+         }
+         else
+         {
+            snprintf(&line[0], sizeof(line), "%s,%c\n", id, kind);
+         }
       }
    }
    else
    {
       if (text != NULL)
       {
-         snprintf(&line[0], sizeof(line), "%s,%d,%s\n", id, kind, text);
+         if (config->output_sockets)
+         {
+            snprintf(&line[0], sizeof(line), "%s,%d,%d,%d,%s\n", id, from, to, kind, text);
+         }
+         else
+         {
+            snprintf(&line[0], sizeof(line), "%s,%d,%s\n", id, kind, text);
+         }
       }
       else
       {
-         snprintf(&line[0], sizeof(line), "%s,%d\n", id, kind);
+         if (config->output_sockets)
+         {
+            snprintf(&line[0], sizeof(line), "%s,%d,%d,%d\n", id, from, to, kind);
+         }
+         else
+         {
+            snprintf(&line[0], sizeof(line), "%s,%d\n", id, kind);
+         }
       }
    }
 
