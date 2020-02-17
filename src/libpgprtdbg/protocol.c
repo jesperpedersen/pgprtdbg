@@ -314,7 +314,7 @@ fe_p(struct message* msg, char** text)
    length = pgprtdbg_read_int32(msg->data + 1);
 
    ZF_LOGV("FE: p");
-   ZF_LOGV_MEM(msg->data + 5, length, "Data: %p", (const void *)msg->data + 5);
+   ZF_LOGV_MEM(msg->data + 5, length - 4, "Data: %p", (const void *)msg->data + 5);
 
    return msg->length;
 }
