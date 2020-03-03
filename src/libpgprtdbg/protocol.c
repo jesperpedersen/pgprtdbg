@@ -290,7 +290,8 @@ fe_zero(struct message* msg, char** text)
    }
    else
    {
-      printf("Unknown request: %d\n", request);
+      ZF_LOGE("Unknown request: %d\n", request);
+      ZF_LOGE_MEM(msg->data, msg->length, "Message %p:", (const void *)msg->data);
       exit(1);
    }
 
