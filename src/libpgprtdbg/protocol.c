@@ -325,6 +325,7 @@ static int
 fe_Q(struct message* msg, char** text)
 {
    ZF_LOGV("FE: Q");
+   ZF_LOGV("Data: %s", (char*)(msg->data + 5));
 
    return msg->length;
 }
