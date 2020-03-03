@@ -422,6 +422,8 @@ be_E(struct message* msg, char** text)
       offset += (strlen(str) + 2);
    }
 
+   offset += 1;
+
    return offset;
 }
 
