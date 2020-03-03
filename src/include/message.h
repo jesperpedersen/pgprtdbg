@@ -118,6 +118,22 @@ pgprtdbg_free_copy_message(struct message* msg);
 int32_t
 pgprtdbg_get_request(struct message* msg);
 
+/**
+ * Write an empty message
+ * @param socket The socket descriptor
+ * @return 0 upon success, otherwise 1
+ */
+int
+pgprtdbg_write_empty(int socket);
+
+/**
+ * Write a connection refused message (protocol 1 or 2)
+ * @param socket The socket descriptor
+ * @return 0 upon success, otherwise 1
+ */
+int
+pgprtdbg_write_connection_refused_old(int socket);
+
 #ifdef __cplusplus
 }
 #endif

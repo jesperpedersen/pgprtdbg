@@ -29,7 +29,9 @@
 /* pgprtdbg */
 #include <pgprtdbg.h>
 #include <logging.h>
+#include <message.h>
 #include <protocol.h>
+#include <worker.h>
 #include <utils.h>
 
 #define ZF_LOG_TAG "protocol"
@@ -47,7 +49,7 @@
 
 static void output_write(char* id, int from, int to, void* shmem, signed char kind, char* text);
 
-static int fe_zero(struct message* msg, char** text);
+static int fe_zero(int client_fd, struct message* msg, char** text);
 static int fe_Q(struct message* msg, char** text);
 static int fe_p(struct message* msg, char** text);
 static int fe_X(struct message* msg, char** text);
@@ -83,7 +85,7 @@ pgprtdbg_process(char* id, int from, int to, void* shmem, struct message* msg)
       switch (kind)
       {
          case 0:
-            offset = fe_zero(msg, &text);
+            offset = fe_zero(from, msg, &text);
             break;
          case 'Q':
             offset = fe_Q(msg, &text);
@@ -145,6 +147,13 @@ pgprtdbg_process(char* id, int from, int to, void* shmem, struct message* msg)
       output_write(id, from, to, shmem, kind, text);
       free(text);
       text = NULL;
+
+      if (offset == -1)
+      {
+         exit_code = WORKER_CLIENT_FAILURE;
+         running = 0;
+         return;
+      }
    }
 }
 
@@ -217,7 +226,7 @@ output_write(char* id, int from, int to, void* shmem, signed char kind, char* te
 }
 
 static int
-fe_zero(struct message* msg, char** text)
+fe_zero(int client_fd, struct message* msg, char** text)
 {
    int start, end;
    int counter;
@@ -283,10 +292,20 @@ fe_zero(struct message* msg, char** text)
    else if (request == 80877103)
    {
       /* SSL: Not supported */
+      ZF_LOGD("SSL");
    }
    else if (request == 80877104)
    {
       /* GSS: Not supported */
+      ZF_LOGD("GSS");
+   }
+   else if (request == 131072)
+   {
+      /* Protocol v2: Not supported */
+      ZF_LOGD("protocol v2");
+      pgprtdbg_write_connection_refused_old(client_fd);
+      pgprtdbg_write_empty(client_fd);
+      goto error;
    }
    else
    {
@@ -296,6 +315,10 @@ fe_zero(struct message* msg, char** text)
    }
 
    return msg->length;
+
+error:
+
+   return -1;
 }
 
 static int

@@ -129,6 +129,42 @@ pgprtdbg_get_request(struct message* msg)
    return pgprtdbg_read_int32(msg->data + 4);
 }
 
+int
+pgprtdbg_write_empty(int socket)
+{
+   char zero[1];
+   struct message msg;
+
+   memset(&msg, 0, sizeof(struct message));
+   memset(&zero, 0, sizeof(zero));
+
+   msg.kind = 0;
+   msg.length = 1;
+   msg.data = &zero;
+
+   return pgprtdbg_write_message(socket, &msg);
+}
+
+int
+pgprtdbg_write_connection_refused_old(int socket)
+{
+   int size = 20;
+   char connection_refused[size];
+   struct message msg;
+
+   memset(&msg, 0, sizeof(struct message));
+   memset(&connection_refused, 0, sizeof(connection_refused));
+
+   pgprtdbg_write_byte(&connection_refused, 'E');
+   pgprtdbg_write_string(&(connection_refused[1]), "connection refused");
+
+   msg.kind = 'E';
+   msg.length = size;
+   msg.data = &connection_refused;
+
+   return write_message(socket, true, &msg);
+}
+
 static int
 read_message(int socket, bool block, struct message** msg)
 {
