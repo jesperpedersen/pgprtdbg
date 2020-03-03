@@ -1,6 +1,6 @@
 # pgprtdbg
 
-`pgprtdbg` is an application that turns [PostgreSQL](https://www.postgresql.org) protocol interaction into a trace file.
+`pgprtdbg` is an application that turns [PostgreSQL](https://www.postgresql.org) protocol v3 interaction into a trace file.
 
 See [Getting Started](./doc/GETTING_STARTED.md) on how to get started with `pgprtdbg`.
 
