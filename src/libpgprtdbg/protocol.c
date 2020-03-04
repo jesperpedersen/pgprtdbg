@@ -30,6 +30,7 @@
 #include <pgprtdbg.h>
 #include <logging.h>
 #include <message.h>
+#include <pipeline.h>
 #include <protocol.h>
 #include <worker.h>
 #include <utils.h>
@@ -247,6 +248,7 @@ fe_zero(int client_fd, struct message* msg, char** text)
 
    if (request == 196608)
    {
+      transport = PLAIN;
       counter = 0;
 
       /* We know where the parameters start, and we know that the message is zero terminated */
@@ -293,6 +295,7 @@ fe_zero(int client_fd, struct message* msg, char** text)
    {
       /* SSL: Not supported */
       ZF_LOGD("SSL");
+      transport = SSL;
    }
    else if (request == 80877104)
    {

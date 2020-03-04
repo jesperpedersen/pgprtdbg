@@ -41,6 +41,8 @@
 #include <ev.h>
 #include <stdlib.h>
 
+int transport = PLAIN;
+
 void
 pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
 {
@@ -55,15 +57,22 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
    status = pgprtdbg_read_message(wi->client_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
    {
-      if ((msg->kind >= 'A' && msg->kind <= 'Z') || (msg->kind >= 'a' && msg->kind <= 'z'))
+      if (transport == PLAIN)
       {
-         ZF_LOGD("Read %c from %d (%zd)", msg->kind, wi->client_fd, msg->length);
+         if ((msg->kind >= 'A' && msg->kind <= 'Z') || (msg->kind >= 'a' && msg->kind <= 'z'))
+         {
+            ZF_LOGD("Read %c from %d (%zd)", msg->kind, wi->client_fd, msg->length);
+         }
+         else
+         {
+            ZF_LOGD("Read %d from %d (%zd)", msg->kind, wi->client_fd, msg->length);
+         }
+         pgprtdbg_process("C", wi->client_fd, wi->server_fd, wi->shmem, msg);
       }
       else
       {
-         ZF_LOGD("Read %d from %d (%zd)", msg->kind, wi->client_fd, msg->length);
+         ZF_LOGV_MEM(msg->data, msg->length, "Message %p:", (const void *)msg->data);
       }
-      pgprtdbg_process("C", wi->client_fd, wi->server_fd, wi->shmem, msg);
 
       status = pgprtdbg_write_message(wi->server_fd, msg);
       if (unlikely(status != MESSAGE_STATUS_OK))
@@ -71,10 +80,13 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
          goto server_error;
       }
 
-      if (msg->kind == 'X')
+      if (transport == PLAIN)
       {
-         exit_code = WORKER_SUCCESS;
-         running = 0;
+         if (msg->kind == 'X')
+         {
+            exit_code = WORKER_SUCCESS;
+            running = 0;
+         }
       }
    }
    else
@@ -134,15 +146,22 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
    status = pgprtdbg_read_message(wi->server_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
    {
-      if ((msg->kind >= 'A' && msg->kind <= 'Z') || (msg->kind >= 'a' && msg->kind <= 'z'))
+      if (transport == PLAIN)
       {
-         ZF_LOGD("Read %c from %d (%zd)", msg->kind, wi->server_fd, msg->length);
+         if ((msg->kind >= 'A' && msg->kind <= 'Z') || (msg->kind >= 'a' && msg->kind <= 'z'))
+         {
+            ZF_LOGD("Read %c from %d (%zd)", msg->kind, wi->server_fd, msg->length);
+         }
+         else
+         {
+            ZF_LOGD("Read %d from %d (%zd)", msg->kind, wi->server_fd, msg->length);
+         }
+         pgprtdbg_process("S", wi->server_fd, wi->client_fd, wi->shmem, msg);
       }
       else
       {
-         ZF_LOGD("Read %d from %d (%zd)", msg->kind, wi->server_fd, msg->length);
+         ZF_LOGV_MEM(msg->data, msg->length, "Message %p:", (const void *)msg->data);
       }
-      pgprtdbg_process("S", wi->server_fd, wi->client_fd, wi->shmem, msg);
 
       status = pgprtdbg_write_message(wi->client_fd, msg);
       if (unlikely(status != MESSAGE_STATUS_OK))
@@ -150,23 +169,25 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
          goto client_error;
       }
 
-      if (unlikely(msg->kind == 'E'))
+      if (transport == PLAIN)
       {
-         fatal = false;
-
-         if (!strncmp(msg->data + 6, "FATAL", 5) || !strncmp(msg->data + 6, "PANIC", 5))
-            fatal = true;
-
-         if (!strncmp(msg->data + 20, "0A000", 5))
+         if (unlikely(msg->kind == 'E'))
          {
-            ZF_LOGD("FOUND");
             fatal = false;
-         }
 
-         if (fatal)
-         {
-            exit_code = WORKER_SERVER_FATAL;
-            running = 0;
+            if (!strncmp(msg->data + 6, "FATAL", 5) || !strncmp(msg->data + 6, "PANIC", 5))
+               fatal = true;
+
+            if (!strncmp(msg->data + 20, "0A000", 5))
+            {
+               fatal = false;
+            }
+
+            if (fatal)
+            {
+               exit_code = WORKER_SERVER_FATAL;
+               running = 0;
+            }
          }
       }
    }
