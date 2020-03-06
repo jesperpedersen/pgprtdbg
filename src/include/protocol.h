@@ -38,15 +38,24 @@ extern "C" {
 #include <stdlib.h>
 
 /**
- * Decode a message
- * @param id The identifier
+ * Decode a message from the client
  * @param from The from socket
  * @param to The to socket
  * @param shmem The shared memory segment
  * @param msg The message
  */
 void
-pgprtdbg_process(char* id, int from, int to, void* shmem, struct message* msg);
+pgprtdbg_client(int from, int to, void* shmem, struct message* msg);
+
+/**
+ * Decode a message from the server
+ * @param from The from socket
+ * @param to The to socket
+ * @param shmem The shared memory segment
+ * @param msg The message
+ */
+void
+pgprtdbg_server(int from, int to, void* shmem, struct message* msg);
 
 #ifdef __cplusplus
 }

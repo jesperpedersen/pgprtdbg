@@ -67,7 +67,7 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
          {
             ZF_LOGD("Read %d from %d (%zd)", msg->kind, wi->client_fd, msg->length);
          }
-         pgprtdbg_process("C", wi->client_fd, wi->server_fd, wi->shmem, msg);
+         pgprtdbg_client(wi->client_fd, wi->server_fd, wi->shmem, msg);
       }
       else
       {
@@ -156,7 +156,7 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
          {
             ZF_LOGD("Read %d from %d (%zd)", msg->kind, wi->server_fd, msg->length);
          }
-         pgprtdbg_process("S", wi->server_fd, wi->client_fd, wi->shmem, msg);
+         pgprtdbg_server(wi->server_fd, wi->client_fd, wi->shmem, msg);
       }
       else
       {
