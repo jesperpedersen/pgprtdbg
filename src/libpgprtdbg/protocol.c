@@ -100,81 +100,116 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
 
    offset = 0;
 
-   while (offset < msg->length)
+   if (transport == PLAIN)
    {
-      kind = pgprtdbg_read_byte(msg->data + offset);
-
-      switch (kind)
+      while (offset < msg->length)
       {
-         case 0:
-            offset = fe_zero(from, msg, &text);
-            break;
-         case 'B':
-            offset = fe_B(msg, &text);
-            break;
-         case 'C':
-            offset = fe_C(msg, &text);
-            break;
-         case 'D':
-            offset = fe_D(msg, &text);
-            break;
-         case 'E':
-            offset = fe_E(msg, &text);
-            break;
-         case 'F':
-            offset = fe_F(msg, &text);
-            break;
-         case 'H':
-            offset = fe_H(msg, &text);
-            break;
-         case 'P':
-            offset = fe_P(msg, &text);
-            break;
-         case 'Q':
-            offset = fe_Q(msg, &text);
-            break;
-         case 'S':
-            offset = fe_S(msg, &text);
-            break;
-         case 'X':
-            offset = fe_X(msg, &text);
-            break;
-         case 'c':
-            offset = fe_c(msg, &text);
-            break;
-         case 'd':
-            offset = fe_d(msg, &text);
-            break;
-         case 'f':
-            offset = fe_f(msg, &text);
-            break;
-         case 'p':
-            offset = fe_p(msg, &text);
-            break;
-         default:
-            if ((kind >= 'A' && kind <= 'Z') || (kind >= 'a' && kind <= 'z'))
-            {
-               if ((msg->kind >= 'A' && msg->kind <= 'Z') || (msg->kind >= 'a' && msg->kind <= 'z'))
+         kind = pgprtdbg_read_byte(msg->data + offset);
+
+         switch (kind)
+         {
+            case 0:
+               offset = fe_zero(from, msg, &text);
+               break;
+            case 'B':
+               offset = fe_B(msg, &text);
+               break;
+            case 'C':
+               offset = fe_C(msg, &text);
+               break;
+            case 'D':
+               offset = fe_D(msg, &text);
+               break;
+            case 'E':
+               offset = fe_E(msg, &text);
+               break;
+            case 'F':
+               offset = fe_F(msg, &text);
+               break;
+            case 'H':
+               offset = fe_H(msg, &text);
+               break;
+            case 'P':
+               offset = fe_P(msg, &text);
+               break;
+            case 'Q':
+               offset = fe_Q(msg, &text);
+               break;
+            case 'S':
+               offset = fe_S(msg, &text);
+               break;
+            case 'X':
+               offset = fe_X(msg, &text);
+               break;
+            case 'c':
+               offset = fe_c(msg, &text);
+               break;
+            case 'd':
+               offset = fe_d(msg, &text);
+               break;
+            case 'f':
+               offset = fe_f(msg, &text);
+               break;
+            case 'p':
+               offset = fe_p(msg, &text);
+               break;
+            default:
+               if ((kind >= 'A' && kind <= 'Z') || (kind >= 'a' && kind <= 'z'))
                {
-                  ZF_LOGI("Unsupported: %c (%c)", kind, msg->kind);
+                  if ((msg->kind >= 'A' && msg->kind <= 'Z') || (msg->kind >= 'a' && msg->kind <= 'z'))
+                  {
+                     ZF_LOGI("Unsupported: %c (%c)", kind, msg->kind);
+                  }
+                  else
+                  {
+                     ZF_LOGI("Unsupported: %c (%d)", kind, msg->kind);
+                  }
                }
                else
                {
-                  ZF_LOGI("Unsupported: %c (%d)", kind, msg->kind);
+                  ZF_LOGI("Unsupported: %d (%d)", kind, msg->kind);
                }
-            }
-            else
-            {
-               ZF_LOGI("Unsupported: %d (%d)", kind, msg->kind);
-            }
 
-            offset = msg->length;
-            break;
+               offset = msg->length;
+               break;
+         }
+
+         output_write("C", from, to, shmem, kind, text);
+         free(text);
+         text = NULL;
       }
 
-      output_write("C", from, to, shmem, kind, text);
-      free(text);
-      text = NULL;
+      if (offset == -1)
+      {
+         exit_code = WORKER_CLIENT_FAILURE;
+         running = 0;
+         return;
+      }
+   }
+   else
+   {
+      while (offset < msg->length)
+      {
+         kind = pgprtdbg_read_byte(msg->data + offset);
+
+         switch (kind)
+         {
+            case 0:
+               offset = fe_zero(from, msg, &text);
+               break;
+            default:
+               offset = msg->length;
+               break;
+         }
+
+         if (transport == PLAIN)
+         {
+            output_write("C", from, to, shmem, kind, text);
+         }
+
+         free(text);
+         text = NULL;
+      }
 
       if (offset == -1)
       {
@@ -196,102 +231,137 @@ pgprtdbg_server(int from, int to, void* shmem, struct message* msg)
 
    offset = 0;
 
-   while (offset < msg->length)
+   if (transport == PLAIN)
    {
-      kind = pgprtdbg_read_byte(msg->data + offset);
-
-      switch (kind)
+      while (offset < msg->length)
       {
-         case '1':
-            offset = be_one(msg, offset, &text);
-            break;
-         case '2':
-            offset = be_two(msg, offset, &text);
-            break;
-         case '3':
-            offset = be_three(msg, offset, &text);
-            break;
-         case 'A':
-            offset = be_A(msg, offset, &text);
-            break;
-         case 'C':
-            offset = be_C(msg, offset, &text);
-            break;
-         case 'D':
-            offset = be_D(msg, offset, &text);
-            break;
-         case 'E':
-            offset = be_E(msg, offset, &text);
-            break;
-         case 'G':
-            offset = be_G(msg, offset, &text);
-            break;
-         case 'H':
-            offset = be_H(msg, offset, &text);
-            break;
-         case 'I':
-            offset = be_I(msg, offset, &text);
-            break;
-         case 'K':
-            offset = be_K(msg, offset, &text);
-            break;
-         case 'N':
-            offset = be_N(msg, offset, &text);
-            break;
-         case 'R':
-            offset = be_R(msg, offset, &text);
-            break;
-         case 'S':
-            offset = be_S(msg, offset, &text);
-            break;
-         case 'T':
-            offset = be_T(msg, offset, &text);
-            break;
-         case 'V':
-            offset = be_V(msg, offset, &text);
-            break;
-         case 'W':
-            offset = be_W(msg, offset, &text);
-            break;
-         case 'Z':
-            offset = be_Z(msg, offset, &text);
-            break;
-         case 'n':
-            offset = be_n(msg, offset, &text);
-            break;
-         case 's':
-            offset = be_s(msg, offset, &text);
-            break;
-         case 't':
-            offset = be_t(msg, offset, &text);
-            break;
-         case 'v':
-            offset = be_v(msg, offset, &text);
-            break;
-         default:
-            if ((kind >= 'A' && kind <= 'Z') || (kind >= 'a' && kind <= 'z'))
-            {
-               if ((msg->kind >= 'A' && msg->kind <= 'Z') || (msg->kind >= 'a' && msg->kind <= 'z'))
+         kind = pgprtdbg_read_byte(msg->data + offset);
+
+         switch (kind)
+         {
+            case '1':
+               offset = be_one(msg, offset, &text);
+               break;
+            case '2':
+               offset = be_two(msg, offset, &text);
+               break;
+            case '3':
+               offset = be_three(msg, offset, &text);
+               break;
+            case 'A':
+               offset = be_A(msg, offset, &text);
+               break;
+            case 'C':
+               offset = be_C(msg, offset, &text);
+               break;
+            case 'D':
+               offset = be_D(msg, offset, &text);
+               break;
+            case 'E':
+               offset = be_E(msg, offset, &text);
+               break;
+            case 'G':
+               offset = be_G(msg, offset, &text);
+               break;
+            case 'H':
+               offset = be_H(msg, offset, &text);
+               break;
+            case 'I':
+               offset = be_I(msg, offset, &text);
+               break;
+            case 'K':
+               offset = be_K(msg, offset, &text);
+               break;
+            case 'N':
+               offset = be_N(msg, offset, &text);
+               break;
+            case 'R':
+               offset = be_R(msg, offset, &text);
+               break;
+            case 'S':
+               offset = be_S(msg, offset, &text);
+               break;
+            case 'T':
+               offset = be_T(msg, offset, &text);
+               break;
+            case 'V':
+               offset = be_V(msg, offset, &text);
+               break;
+            case 'W':
+               offset = be_W(msg, offset, &text);
+               break;
+            case 'Z':
+               offset = be_Z(msg, offset, &text);
+               break;
+            case 'n':
+               offset = be_n(msg, offset, &text);
+               break;
+            case 's':
+               offset = be_s(msg, offset, &text);
+               break;
+            case 't':
+               offset = be_t(msg, offset, &text);
+               break;
+            case 'v':
+               offset = be_v(msg, offset, &text);
+               break;
+            default:
+               if ((kind >= 'A' && kind <= 'Z') || (kind >= 'a' && kind <= 'z'))
                {
-                  ZF_LOGI("Unsupported: %c (%c)", kind, msg->kind);
+                  if ((msg->kind >= 'A' && msg->kind <= 'Z') || (msg->kind >= 'a' && msg->kind <= 'z'))
+                  {
+                     ZF_LOGI("Unsupported: %c (%c)", kind, msg->kind);
+                  }
+                  else
+                  {
+                     ZF_LOGI("Unsupported: %c (%d)", kind, msg->kind);
+                  }
                }
                else
                {
-                  ZF_LOGI("Unsupported: %c (%d)", kind, msg->kind);
+                  ZF_LOGI("Unsupported: %d (%d)", kind, msg->kind);
                }
-            }
-            else
-            {
-               ZF_LOGI("Unsupported: %d (%d)", kind, msg->kind);
-            }
 
-            offset = msg->length;
-            break;
+               offset = msg->length;
+               break;
+         }
+
+         output_write("S", from, to, shmem, kind, text);
+         free(text);
+         text = NULL;
+
+         if (offset == -1)
+         {
+            exit_code = WORKER_SERVER_FAILURE;
+            running = 0;
+            return;
+         }
       }
+   }
+   else
+   {
+      while (offset < msg->length)
+      {
+         kind = pgprtdbg_read_byte(msg->data + offset);
 
-      output_write("S", from, to, shmem, kind, text);
-      free(text);
-      text = NULL;
+         switch (kind)
+         {
+            case 'N':
+               offset = be_N(msg, offset, &text);
+               break;
+            default:
+               offset = msg->length;
+               break;
+         }
+
+         if (transport == PLAIN || kind == 'N')
+         {
+            output_write("S", from, to, shmem, kind, text);
+         }
+
+         free(text);
+         text = NULL;
+      }
 
       if (offset == -1)
       {
@@ -435,6 +505,12 @@ fe_zero(int client_fd, struct message* msg, char** text)
          free(array[i]);
       }
       free(array);
+   }
+   else if (request == 80877102)
+   {
+      ZF_LOGD("CancelRequest");
+      ZF_LOGD("Pid: %d", pgprtdbg_read_int32(msg->data + 8));
+      ZF_LOGD("Secret: %d", pgprtdbg_read_int32(msg->data + 12));
    }
    else if (request == 80877103)
    {

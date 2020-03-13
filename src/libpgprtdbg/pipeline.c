@@ -57,22 +57,7 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
    status = pgprtdbg_read_message(wi->client_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
    {
-      if (transport == PLAIN)
-      {
-         if ((msg->kind >= 'A' && msg->kind <= 'Z') || (msg->kind >= 'a' && msg->kind <= 'z'))
-         {
-            ZF_LOGD("Read %c from %d (%zd)", msg->kind, wi->client_fd, msg->length);
-         }
-         else
-         {
-            ZF_LOGD("Read %d from %d (%zd)", msg->kind, wi->client_fd, msg->length);
-         }
-         pgprtdbg_client(wi->client_fd, wi->server_fd, wi->shmem, msg);
-      }
-      else
-      {
-         ZF_LOGV_MEM(msg->data, msg->length, "Message %p:", (const void *)msg->data);
-      }
+      pgprtdbg_client(wi->client_fd, wi->server_fd, wi->shmem, msg);
 
       status = pgprtdbg_write_message(wi->server_fd, msg);
       if (unlikely(status != MESSAGE_STATUS_OK))
@@ -101,11 +86,11 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
 client_error:
    if (errno != 0)
    {
-      ZF_LOGE("client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
+      ZF_LOGD("client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
    }
    else
    {
-      ZF_LOGE("client_error: client_fd %d (%d)", wi->client_fd, status);
+      ZF_LOGD("client_error: client_fd %d (%d)", wi->client_fd, status);
    }
 
    errno = 0;
@@ -117,11 +102,11 @@ client_error:
 server_error:
    if (errno != 0)
    {
-      ZF_LOGE("server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
+      ZF_LOGD("server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
    }
    else
    {
-      ZF_LOGE("server_error: server_fd %d (%d)", wi->server_fd, status);
+      ZF_LOGD("server_error: server_fd %d (%d)", wi->server_fd, status);
    }
 
    errno = 0;
@@ -146,22 +131,7 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
    status = pgprtdbg_read_message(wi->server_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
    {
-      if (transport == PLAIN)
-      {
-         if ((msg->kind >= 'A' && msg->kind <= 'Z') || (msg->kind >= 'a' && msg->kind <= 'z'))
-         {
-            ZF_LOGD("Read %c from %d (%zd)", msg->kind, wi->server_fd, msg->length);
-         }
-         else
-         {
-            ZF_LOGD("Read %d from %d (%zd)", msg->kind, wi->server_fd, msg->length);
-         }
-         pgprtdbg_server(wi->server_fd, wi->client_fd, wi->shmem, msg);
-      }
-      else
-      {
-         ZF_LOGV_MEM(msg->data, msg->length, "Message %p:", (const void *)msg->data);
-      }
+      pgprtdbg_server(wi->server_fd, wi->client_fd, wi->shmem, msg);
 
       status = pgprtdbg_write_message(wi->client_fd, msg);
       if (unlikely(status != MESSAGE_STATUS_OK))
@@ -203,11 +173,11 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
 client_error:
    if (errno != 0)
    {
-      ZF_LOGE("client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
+      ZF_LOGD("client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
    }
    else
    {
-      ZF_LOGE("client_error: client_fd %d (%d)", wi->client_fd, status);
+      ZF_LOGD("client_error: client_fd %d (%d)", wi->client_fd, status);
    }
 
    errno = 0;
@@ -219,11 +189,11 @@ client_error:
 server_error:
    if (errno != 0)
    {
-      ZF_LOGE("server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
+      ZF_LOGD("server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
    }
    else
    {
-      ZF_LOGE("server_error: server_fd %d (%d)", wi->server_fd, status);
+      ZF_LOGD("server_error: server_fd %d (%d)", wi->server_fd, status);
    }
 
    errno = 0;
