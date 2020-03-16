@@ -42,7 +42,7 @@ extern "C" {
 #include <time.h>
 #include <sys/types.h>
 
-#define VERSION "0.1.0"
+#define VERSION "0.2.0"
 
 #define ZF_LOG_LEVEL ZF_LOG_VERBOSE
 

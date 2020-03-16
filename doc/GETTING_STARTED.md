@@ -4,7 +4,7 @@ First of all, make sure that `pgprtdbg` is installed and in your path by
 using `pgprtdbg -?`. You should see
 
 ```
-pgprtdbg 0.1.0
+pgprtdbg 0.2.0
   PostgreSQL protocol debugging
 
 Usage:
