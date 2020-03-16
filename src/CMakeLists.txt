@@ -31,18 +31,13 @@ add_compile_options(-std=c17)
 add_compile_options(-D_POSIX_C_SOURCE=200809L)
 add_compile_options(-D__USE_ISOC11)
 add_compile_options(-D_GNU_SOURCE)
+add_compile_options(-O2)
 
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -fno-omit-frame-pointer -DDEBUG")
-
-if (CMAKE_BUILD_TYPE MATCHES Release)
-  add_compile_options(-O2)
-
-  if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(-march=native)
-    add_compile_options(-mtune=native)
-    add_compile_options(-flto)
-  endif()
-endif (CMAKE_BUILD_TYPE MATCHES Release)
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+  add_compile_options(-march=native)
+  add_compile_options(-mtune=native)
+  add_compile_options(-flto)
+endif()
 
 #
 # Build libpgprtdbg

@@ -44,12 +44,7 @@ extern "C" {
 
 #define VERSION "0.1.0"
 
-/* Setup zf_log to include DEBUG support even for release builds */
-#ifdef DEBUG
 #define ZF_LOG_LEVEL ZF_LOG_VERBOSE
-#else
-#define ZF_LOG_LEVEL ZF_LOG_DEBUG
-#endif
 
 #define MAX_BUFFER_SIZE      65535
 #define DEFAULT_BUFFER_SIZE  65535

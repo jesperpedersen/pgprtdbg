@@ -30,7 +30,7 @@ dnf install gcc cmake make libev libev-devel
 
 Alternative [clang 8+](https://clang.llvm.org/) can be used.
 
-### Release build
+### Build
 
 The following commands will install `pgprtdbg` in the `/usr/local` hierarchy
 and run the default configuration.
@@ -48,29 +48,12 @@ sudo make install
 
 See [RPM](./doc/RPM.md) for how to build a RPM of `pgprtdbg`.
 
-### Debug build
-
-The following commands will create a `DEBUG` version of `pgprtdbg`.
-
-```sh
-git clone https://github.com/jesperpedersen/pgprtdbg.git
-cd pgprtdbg
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Debug ..
-make
-cd src
-cp ../../doc/etc/*.conf .
-./pgprtdbg -c pgprtdbg.conf
-```
-
-Remember to set the `log_level` configuration option to `debug5`.
-
 ## Contributing
 
 Contributions to `pgprtdbg` are managed on [GitHub.com](https://github.com/jesperpedersen/pgprtdbg/)
 
-* [Issue](https://github.com/jesperpedersen/pgprtdbg/issues)
+* [Ask a question](https://github.com/jesperpedersen/pgprtdbg/issues)
+* [Raise an issue](https://github.com/jesperpedersen/pgprtdbg/issues)
 * [Feature request](https://github.com/jesperpedersen/pgprtdbg/issues)
 * [Code submission](https://github.com/jesperpedersen/pgprtdbg/pulls)
 
