@@ -154,22 +154,7 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
                offset = fe_p(msg, &text);
                break;
             default:
-               if ((kind >= 'A' && kind <= 'Z') || (kind >= 'a' && kind <= 'z'))
-               {
-                  if ((msg->kind >= 'A' && msg->kind <= 'Z') || (msg->kind >= 'a' && msg->kind <= 'z'))
-                  {
-                     ZF_LOGI("Unsupported: %c (%c)", kind, msg->kind);
-                  }
-                  else
-                  {
-                     ZF_LOGI("Unsupported: %c (%d)", kind, msg->kind);
-                  }
-               }
-               else
-               {
-                  ZF_LOGI("Unsupported: %d (%d)", kind, msg->kind);
-               }
-
+               ZF_LOGI("Unsupported client message: %d (%d)", kind, msg->kind);
                offset = msg->length;
                break;
          }
@@ -205,6 +190,10 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
          if (transport == PLAIN)
          {
             output_write("C", from, to, shmem, kind, text);
+         }
+         else
+         {
+            output_write("C", from, to, shmem, '?', NULL);
          }
 
          free(text);
@@ -306,22 +295,7 @@ pgprtdbg_server(int from, int to, void* shmem, struct message* msg)
                offset = be_v(msg, offset, &text);
                break;
             default:
-               if ((kind >= 'A' && kind <= 'Z') || (kind >= 'a' && kind <= 'z'))
-               {
-                  if ((msg->kind >= 'A' && msg->kind <= 'Z') || (msg->kind >= 'a' && msg->kind <= 'z'))
-                  {
-                     ZF_LOGI("Unsupported: %c (%c)", kind, msg->kind);
-                  }
-                  else
-                  {
-                     ZF_LOGI("Unsupported: %c (%d)", kind, msg->kind);
-                  }
-               }
-               else
-               {
-                  ZF_LOGI("Unsupported: %d (%d)", kind, msg->kind);
-               }
-
+               ZF_LOGI("Unsupported server message: %d (%d)", kind, msg->kind);
                offset = msg->length;
                break;
          }
@@ -358,6 +332,10 @@ pgprtdbg_server(int from, int to, void* shmem, struct message* msg)
          {
             output_write("S", from, to, shmem, kind, text);
          }
+         else
+         {
+            output_write("S", from, to, shmem, '?', NULL);
+         }
 
          free(text);
          text = NULL;
@@ -383,7 +361,7 @@ output_write(char* id, int from, int to, void* shmem, signed char kind, char* te
 
    sem_wait(&config->lock);
 
-   if ((kind >= 'A' && kind <= 'Z') || (kind >= 'a' && kind <= 'z'))
+   if ((kind >= 'A' && kind <= 'Z') || (kind >= 'a' && kind <= 'z')  || (kind >= '0' && kind <= '9') || kind == '?')
    {
       if (text != NULL)
       {
