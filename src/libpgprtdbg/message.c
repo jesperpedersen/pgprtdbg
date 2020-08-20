@@ -43,7 +43,7 @@
 #include <unistd.h>
 
 static int read_message(int socket, bool block, struct message** msg);
-static int write_message(int socket, bool nodelay, struct message* msg);
+static int write_message(int socket, struct message* msg);
 
 int
 pgprtdbg_read_message(int socket, struct message** msg)
@@ -60,13 +60,7 @@ pgprtdbg_read_block_message(int socket, struct message** msg)
 int
 pgprtdbg_write_message(int socket, struct message* msg)
 {
-   return write_message(socket, false, msg);
-}
-
-int
-pgprtdbg_write_nodelay_message(int socket, struct message* msg)
-{
-   return write_message(socket, true, msg);
+   return write_message(socket, msg);
 }
 
 int
@@ -162,7 +156,7 @@ pgprtdbg_write_connection_refused_old(int socket)
    msg.length = size;
    msg.data = &connection_refused;
 
-   return write_message(socket, true, &msg);
+   return write_message(socket, &msg);
 }
 
 static int
@@ -221,14 +215,22 @@ read_message(int socket, bool block, struct message** msg)
 }
 
 static int
-write_message(int socket, bool nodelay, struct message* msg)
+write_message(int socket, struct message* msg)
 {
    bool keep_write = false;
-   ssize_t numbytes;  
+   ssize_t numbytes;
+   int offset;
+   ssize_t totalbytes;
+   ssize_t remaining;
+
+   numbytes = 0;
+   offset = 0;
+   totalbytes = 0;
+   remaining = msg->length;
 
    do
    {
-      numbytes = write(socket, msg->data, msg->length);
+      numbytes = write(socket, msg->data + offset, remaining);
 
       if (likely(numbytes == msg->length))
       {
@@ -236,18 +238,30 @@ write_message(int socket, bool nodelay, struct message* msg)
       }
       else if (numbytes != -1)
       {
-         ZF_LOGD("Write - %zd vs %zd", numbytes, msg->length);
+         offset += numbytes;
+         totalbytes += numbytes;
+         remaining -= numbytes;
+
+         if (totalbytes == msg->length)
+         {
+            return MESSAGE_STATUS_OK;
+         }
+
+         ZF_LOGD("Write %d - %zd/%zd vs %zd", socket, numbytes, totalbytes, msg->length);
          keep_write = true;
+         errno = 0;
       }
       else
       {
-         if (!nodelay)
+         switch (errno)
          {
-            return MESSAGE_STATUS_ERROR;
-         }
-         else
-         {
-            keep_write = true;
+            case EAGAIN:
+               keep_write = true;
+               errno = 0;
+               break;
+            default:
+               keep_write = false;
+               break;
          }
       }
    } while (keep_write);

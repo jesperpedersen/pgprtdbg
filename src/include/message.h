@@ -70,15 +70,6 @@ int
 pgprtdbg_write_message(int socket, struct message* msg);
 
 /**
- * Write a message with NODELAY
- * @param socket The socket descriptor
- * @param msg The message
- * @return One of MESSAGE_STATUS_ZERO, MESSAGE_STATUS_OK or MESSAGE_STATUS_ERROR
- */
-int
-pgprtdbg_write_nodelay_message(int socket, struct message* msg);
-
-/**
  * Create a message
  * @param data A pointer to the data
  * @param length The length of the message
