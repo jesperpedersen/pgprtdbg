@@ -71,7 +71,7 @@ static int be_two(const struct message* msg, const int offset, char** text);
 static int be_three(const struct message* msg, const int offset, char** text);
 static int be_A(const struct message* msg, const int offset, char** text);
 static int be_C(const struct message* msg, const int offset, char** text);
-static int be_D(const struct message* msg, const int offset, char** text);
+static int be_D(const struct message* msg, const int offset, const int from, const int to, char** text, struct message** new_msg, int* new_offset);
 static int be_E(const struct message* msg, const int offset, char** text);
 static int be_G(const struct message* msg, const int offset, char** text);
 static int be_H(const struct message* msg, const int offset, char** text);
@@ -96,13 +96,13 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
    signed char kind;
    int offset;
 
-   ZF_LOGV_MEM(msg->data, msg->length, "Client message %p:", (const void *)msg->data);
+   ZF_LOGV_MEM(msg->data, msg->length, "Client message (%zd) %p:", msg->length, (const void *)msg->data);
 
    offset = 0;
 
    if (transport == PLAIN)
    {
-      while (offset < msg->length)
+      while (offset != -1 && offset < msg->length)
       {
          kind = pgprtdbg_read_byte(msg->data + offset);
 
@@ -163,17 +163,10 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
          free(text);
          text = NULL;
       }
-
-      if (offset == -1)
-      {
-         exit_code = WORKER_CLIENT_FAILURE;
-         running = 0;
-         return;
-      }
    }
    else
    {
-      while (offset < msg->length)
+      while (offset != -1 && offset < msg->length)
       {
          kind = pgprtdbg_read_byte(msg->data + offset);
 
@@ -199,13 +192,12 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
          free(text);
          text = NULL;
       }
+   }
 
-      if (offset == -1)
-      {
-         exit_code = WORKER_CLIENT_FAILURE;
-         running = 0;
-         return;
-      }
+   if (offset == -1)
+   {
+      exit_code = WORKER_CLIENT_FAILURE;
+      running = 0;
    }
 }
 
@@ -215,116 +207,123 @@ pgprtdbg_server(int from, int to, void* shmem, struct message* msg)
    char* text = NULL;
    signed char kind;
    int offset;
+   struct message* m;
+   struct message* new_msg;
+   int new_offset;
 
-   ZF_LOGV_MEM(msg->data, msg->length, "Server message %p:", (const void *)msg->data);
+   ZF_LOGV_MEM(msg->data, msg->length, "Server message (%zd) %p:", msg->length, (const void *)msg->data);
 
    offset = 0;
+   m = msg;
+   new_msg = NULL;
+   new_offset = 0;
 
    if (transport == PLAIN)
    {
-      while (offset < msg->length)
+      while (offset != -1 && offset < m->length)
       {
-         kind = pgprtdbg_read_byte(msg->data + offset);
+         kind = pgprtdbg_read_byte(m->data + offset);
 
          switch (kind)
          {
             case '1':
-               offset = be_one(msg, offset, &text);
+               offset = be_one(m, offset, &text);
                break;
             case '2':
-               offset = be_two(msg, offset, &text);
+               offset = be_two(m, offset, &text);
                break;
             case '3':
-               offset = be_three(msg, offset, &text);
+               offset = be_three(m, offset, &text);
                break;
             case 'A':
-               offset = be_A(msg, offset, &text);
+               offset = be_A(m, offset, &text);
                break;
             case 'C':
-               offset = be_C(msg, offset, &text);
+               offset = be_C(m, offset, &text);
                break;
             case 'D':
-               offset = be_D(msg, offset, &text);
+               offset = be_D(m, offset, from, to, &text, &new_msg, &new_offset);
+               if (new_msg != NULL)
+               {
+                  m = new_msg;
+                  offset = new_offset;
+                  ZF_LOGV_MEM(m->data, m->length, "Server message (%zd) %p:", m->length, (const void *)m->data);
+               }
                break;
             case 'E':
-               offset = be_E(msg, offset, &text);
+               offset = be_E(m, offset, &text);
                break;
             case 'G':
-               offset = be_G(msg, offset, &text);
+               offset = be_G(m, offset, &text);
                break;
             case 'H':
-               offset = be_H(msg, offset, &text);
+               offset = be_H(m, offset, &text);
                break;
             case 'I':
-               offset = be_I(msg, offset, &text);
+               offset = be_I(m, offset, &text);
                break;
             case 'K':
-               offset = be_K(msg, offset, &text);
+               offset = be_K(m, offset, &text);
                break;
             case 'N':
-               offset = be_N(msg, offset, &text);
+               offset = be_N(m, offset, &text);
                break;
             case 'R':
-               offset = be_R(msg, offset, &text);
+               offset = be_R(m, offset, &text);
                break;
             case 'S':
-               offset = be_S(msg, offset, &text);
+               offset = be_S(m, offset, &text);
                break;
             case 'T':
-               offset = be_T(msg, offset, &text);
+               offset = be_T(m, offset, &text);
                break;
             case 'V':
-               offset = be_V(msg, offset, &text);
+               offset = be_V(m, offset, &text);
                break;
             case 'W':
-               offset = be_W(msg, offset, &text);
+               offset = be_W(m, offset, &text);
                break;
             case 'Z':
-               offset = be_Z(msg, offset, &text);
+               offset = be_Z(m, offset, &text);
                break;
             case 'n':
-               offset = be_n(msg, offset, &text);
+               offset = be_n(m, offset, &text);
                break;
             case 's':
-               offset = be_s(msg, offset, &text);
+               offset = be_s(m, offset, &text);
                break;
             case 't':
-               offset = be_t(msg, offset, &text);
+               offset = be_t(m, offset, &text);
                break;
             case 'v':
-               offset = be_v(msg, offset, &text);
+               offset = be_v(m, offset, &text);
                break;
             default:
-               ZF_LOGI("Unsupported server message: %d (%d)", kind, msg->kind);
-               offset = msg->length;
+               ZF_LOGI("Unsupported server message: %d (%x)", kind, kind);
+               ZF_LOGI("Size: %zd", m->length);
+               ZF_LOGI_MEM(m->data, m->length, "Message %p:", (const void *)m->data);
+               offset = m->length;
                break;
          }
 
          output_write("S", from, to, shmem, kind, text);
          free(text);
          text = NULL;
-
-         if (offset == -1)
-         {
-            exit_code = WORKER_SERVER_FAILURE;
-            running = 0;
-            return;
-         }
       }
    }
    else
    {
-      while (offset < msg->length)
+      while (offset != -1 && offset < m->length)
       {
-         kind = pgprtdbg_read_byte(msg->data + offset);
+         kind = pgprtdbg_read_byte(m->data + offset);
 
          switch (kind)
          {
             case 'N':
-               offset = be_N(msg, offset, &text);
+               offset = be_N(m, offset, &text);
                break;
             default:
-               offset = msg->length;
+               offset = m->length;
                break;
          }
 
@@ -340,13 +339,12 @@ pgprtdbg_server(int from, int to, void* shmem, struct message* msg)
          free(text);
          text = NULL;
       }
+   }
 
-      if (offset == -1)
-      {
-         exit_code = WORKER_SERVER_FAILURE;
-         running = 0;
-         return;
-      }
+   if (offset == -1)
+   {
+      exit_code = WORKER_SERVER_FAILURE;
+      running = 0;
    }
 }
 
@@ -747,42 +745,88 @@ be_C(const struct message* msg, const int offset, char** text)
 
 /* be_D */
 static int
-be_D(const struct message* msg, const int offset, char** text)
+be_D(const struct message* msg, const int offset, const int from, const int to, char** text, struct message** new_msg, int* new_offset)
 {
    int o;
-   int32_t length;
+   int32_t l;
    int16_t number_of_columns;
    int32_t column_length;
+   struct message* m;
+
+   *text = NULL;
+   *new_msg = NULL;
+   *new_offset = 0;
+
+   m = (struct message*)msg;
 
    o = offset;
    o += 1;
-   length = pgprtdbg_read_int32(msg->data + o);
+   l = pgprtdbg_read_int32(m->data + o);
    o += 4;
 
-   number_of_columns = pgprtdbg_read_int16(msg->data + o);
+   number_of_columns = pgprtdbg_read_int16(m->data + o);
    o += 2;
 
    ZF_LOGV("BE: D");
-   ZF_LOGV("Number: %d", number_of_columns);
-   for (int16_t i = 0; i < number_of_columns; i++)
+   ZF_LOGV("Columns: %d", number_of_columns);
+   for (int16_t i = 1; i <= number_of_columns; i++)
    {
-      column_length = pgprtdbg_read_int32(msg->data + o);
+      column_length = pgprtdbg_read_int32(m->data + o);
       o += 4;
 
-      char buf[column_length + 1];
-      memset(&buf, 0, column_length + 1);
-      
-      for (int16_t j = 0; j < column_length; j++)
+      if (column_length != -1)
       {
-         buf[j] = pgprtdbg_read_byte(msg->data + o);
-         o += 1;
-      }
+         char buf[column_length];
 
-      ZF_LOGV("Length: %d", column_length);
-      ZF_LOGV("Data  : %s", buf);
+         memset(&buf, 0, column_length);
+
+         ZF_LOGV("Column %d Length: %d", i, column_length);
+
+         for (int32_t j = 0; j < column_length; j++)
+         {
+            if (o < m->length)
+            {
+               buf[j] = pgprtdbg_read_byte(m->data + o);
+               o += 1;
+            }
+            else
+            {
+               int status;
+
+               status = pgprtdbg_write_message(to, m);
+               if (status != MESSAGE_STATUS_OK)
+               {
+                  ZF_LOGE("Write error to %d (%d)", to, status);
+                  return -1;
+               }
+
+               status = pgprtdbg_read_message(from, new_msg);
+               if (status != MESSAGE_STATUS_OK)
+               {
+                  ZF_LOGE("Read error from %d (%d)", from, status);
+                  return -1;
+               }
+
+               m = *new_msg;
+               o = 0;
+               j--;
+
+               ZF_LOGV(".............");
+            }
+         }
+
+         /* ZF_LOGV_MEM(&buf[0], column_length, "Column %d Data  : %p", i, (const void *)&buf[0]); */
+      }
+      else
+      {
+         ZF_LOGV("Column %d Length: -1", i);
+         ZF_LOGV("Column %d Data  : NULL", i);
+      }
    }
 
-   return offset + length + 1;
+   *new_offset = o;
+
+   return offset + l + 1;
 }
 
 /* be_E */
