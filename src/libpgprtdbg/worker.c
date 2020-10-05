@@ -88,27 +88,6 @@ pgprtdbg_worker(int client_fd, void* shmem)
 
       atomic_fetch_add(&config->active_connections, 1);
       connected = true;
-
-      if (config->nodelay)
-      {
-         if (pgprtdbg_tcp_nodelay(client_fd, shmem))
-         {
-            ZF_LOGW("pgprtdbg_worker: TCP_NODELAY failed for %d", client_fd);
-         }
-      }
-      
-      if (config->non_blocking)
-      {
-         if (pgprtdbg_socket_nonblocking(client_fd, shmem))
-         {
-            ZF_LOGW("pgprtdbg_worker: O_NONBLOCK failed for %d", client_fd);
-         }
-      }
-      
-      if (pgprtdbg_socket_buffers(client_fd, shmem))
-      {
-         ZF_LOGW("pgprtdbg_worker: SO_RCVBUF/SO_SNDBUF failed for %d", client_fd);
-      }
       
       ev_io_init((struct ev_io*)&client_io, pipeline_client, client_fd, EV_READ);
       client_io.client_fd = client_fd;
