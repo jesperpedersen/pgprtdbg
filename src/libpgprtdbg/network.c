@@ -223,12 +223,6 @@ pgprtdbg_connect(void* shmem, const char* hostname, int port, int* fd)
 
    freeaddrinfo(servinfo);
 
-   /* Set O_NONBLOCK on the socket */
-   if (config->non_blocking)
-   {
-      pgprtdbg_socket_nonblocking(*fd, shmem);
-   }
-
    return 0;
 }
 
@@ -251,17 +245,6 @@ pgprtdbg_disconnect(int fd)
       return 1;
 
    return close(fd);
-}
-
-int
-pgprtdbg_socket_nonblocking(int fd, void* shmem)
-{
-   int flags;
-
-   flags = fcntl(fd, F_GETFL);
-   fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-
-   return 0;
 }
 
 int
@@ -367,12 +350,6 @@ bind_host(const char* hostname, int port, void* shmem, int** fds, int* length)
       if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
       {
          ZF_LOGD("server: so_reuseaddr: %d %s", sockfd, strerror(errno));
-         pgprtdbg_disconnect(sockfd);
-         continue;
-      }
-
-      if (pgprtdbg_socket_nonblocking(sockfd, shmem))
-      {
          pgprtdbg_disconnect(sockfd);
          continue;
       }

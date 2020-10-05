@@ -33,7 +33,6 @@ See a [sample](./etc/pgprtdbg.conf) configuration for running `pgprtdbg` on `loc
 | buffer_size | 65535 | Int | No | The network buffer size (`SO_RCVBUF` and `SO_SNDBUF`) |
 | keep_alive | on | Bool | No | Have `SO_KEEPALIVE` on sockets |
 | nodelay | on | Bool | No | Have `TCP_NODELAY` on sockets |
-| non_blocking | on | Bool | No | Have `O_NONBLOCK` on sockets |
 | backlog | 4 | Int | No | The backlog for `listen()` |
 
 ## Server section

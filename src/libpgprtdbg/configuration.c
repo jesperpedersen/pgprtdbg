@@ -64,7 +64,6 @@ pgprtdbg_init_configuration(void* shmem, size_t size)
    config->buffer_size = DEFAULT_BUFFER_SIZE;
    config->keep_alive = true;
    config->nodelay = true;
-   config->non_blocking = true;
    config->backlog = -1;
 
    config->log_type = PGPRTDBG_LOGGING_TYPE_CONSOLE;
@@ -302,17 +301,6 @@ pgprtdbg_read_configuration(char* filename, void* shmem)
                   if (!strcmp(section, "pgprtdbg"))
                   {
                      config->nodelay = as_bool(value);
-                  }
-                  else
-                  {
-                     unknown = true;
-                  }
-               }
-               else if (!strcmp(key, "non_blocking"))
-               {
-                  if (!strcmp(section, "pgprtdbg"))
-                  {
-                     config->non_blocking = as_bool(value);
                   }
                   else
                   {

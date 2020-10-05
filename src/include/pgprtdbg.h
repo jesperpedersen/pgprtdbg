@@ -89,7 +89,6 @@ struct configuration
    int buffer_size;         /**< Socket buffer size */
    bool keep_alive;         /**< Use keep alive */
    bool nodelay;            /**< Use NODELAY */
-   bool non_blocking;       /**< Use non blocking */
    int backlog;             /**< The backlog for listen */
 
    atomic_ushort active_connections;      /**< The active number of connections */

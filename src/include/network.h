@@ -93,15 +93,6 @@ pgprtdbg_tcp_nodelay(int fd, void* shmem);
 int
 pgprtdbg_socket_buffers(int fd, void* shmem);
 
-/**
- * Apply O_NONBLOCK to a descriptor
- * @param fd The descriptor
- * @param shmem The shared memory segment
- * @return 0 upon success, otherwise 1
- */
-int
-pgprtdbg_socket_nonblocking(int fd, void* shmem);
-
 #ifdef __cplusplus
 }
 #endif
