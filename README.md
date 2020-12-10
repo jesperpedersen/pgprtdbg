@@ -52,7 +52,7 @@ See [RPM](./doc/RPM.md) for how to build a RPM of `pgprtdbg`.
 
 Contributions to `pgprtdbg` are managed on [GitHub.com](https://github.com/jesperpedersen/pgprtdbg/)
 
-* [Ask a question](https://github.com/jesperpedersen/pgprtdbg/issues)
+* [Ask a question](https://github.com/jesperpedersen/pgprtdbg/discussions)
 * [Raise an issue](https://github.com/jesperpedersen/pgprtdbg/issues)
 * [Feature request](https://github.com/jesperpedersen/pgprtdbg/issues)
 * [Code submission](https://github.com/jesperpedersen/pgprtdbg/pulls)

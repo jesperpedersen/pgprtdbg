@@ -98,7 +98,7 @@ the project interesting.
 
 Feel free to
 
-* [Ask a question](https://github.com/jesperpedersen/pgprtdbg/issues)
+* [Ask a question](https://github.com/jesperpedersen/pgprtdbg/discussions)
 * [Raise an issue](https://github.com/jesperpedersen/pgprtdbg/issues)
 * [Submit a feature request](https://github.com/jesperpedersen/pgprtdbg/issues)
 * [Write a code submission](https://github.com/jesperpedersen/pgprtdbg/pulls)
