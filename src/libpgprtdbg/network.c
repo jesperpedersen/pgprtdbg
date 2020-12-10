@@ -28,10 +28,8 @@
 
 /* pgprtdbg */
 #include <pgprtdbg.h>
+#include <logging.h>
 #include <network.h>
-
-#define ZF_LOG_TAG "network"
-#include <zf_log.h>
 
 /* system */
 #include <errno.h>
@@ -71,7 +69,9 @@ pgprtdbg_bind(const char* hostname, int port, void* shmem, int** fds, int* lengt
    {
       if (getifaddrs(&ifaddr) == -1)
       {
-         ZF_LOGE("getifaddrs: %s", strerror(errno));
+         pgprtdbg_log_lock(shmem);
+         pgprtdbg_log_line(shmem, "getifaddrs: %s", strerror(errno));
+         pgprtdbg_log_unlock(shmem);
          return 1;
       }
 
@@ -167,7 +167,9 @@ pgprtdbg_connect(void* shmem, const char* hostname, int port, int* fd)
    {
       if ((*fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
       {
-         ZF_LOGD("pgprtdbg_connect: socket: %s", strerror(errno));
+         pgprtdbg_log_lock(shmem);
+         pgprtdbg_log_line(shmem, "pgprtdbg_connect: socket: %s", strerror(errno));
+         pgprtdbg_log_unlock(shmem);
          return 1;
       }
 
@@ -175,7 +177,6 @@ pgprtdbg_connect(void* shmem, const char* hostname, int port, int* fd)
       {
          if (setsockopt(*fd, SOL_SOCKET, SO_KEEPALIVE, &yes, optlen) == -1)
          {
-            ZF_LOGD("pgprtdbg_connect: SO_KEEPALIVE: %d %s", *fd, strerror(errno));
             pgprtdbg_disconnect(*fd);
             return 1;
          }
@@ -185,7 +186,6 @@ pgprtdbg_connect(void* shmem, const char* hostname, int port, int* fd)
       {
          if (setsockopt(*fd, IPPROTO_TCP, TCP_NODELAY, &yes, optlen) == -1)
          {
-            ZF_LOGD("pgprtdbg_connect: TCP_NODELAY: %d %s", *fd, strerror(errno));
             pgprtdbg_disconnect(*fd);
             return 1;
          }
@@ -193,21 +193,18 @@ pgprtdbg_connect(void* shmem, const char* hostname, int port, int* fd)
 
       if (setsockopt(*fd, SOL_SOCKET, SO_RCVBUF, &config->buffer_size, optlen) == -1)
       {
-         ZF_LOGD("pgprtdbg_connect: SO_RCVBUF: %d %s", *fd, strerror(errno));
          pgprtdbg_disconnect(*fd);
          return 1;
       }
 
       if (setsockopt(*fd, SOL_SOCKET, SO_SNDBUF, &config->buffer_size, optlen) == -1)
       {
-         ZF_LOGD("pgprtdbg_connect: SO_SNDBUF: %d %s", *fd, strerror(errno));
          pgprtdbg_disconnect(*fd);
          return 1;
       }
 
       if (connect(*fd, p->ai_addr, p->ai_addrlen) == -1)
       {
-         ZF_LOGD("pgprtdbg_connect: connect: %d %s", *fd, strerror(errno));
          pgprtdbg_disconnect(*fd);
          return 1;
       }
@@ -217,7 +214,9 @@ pgprtdbg_connect(void* shmem, const char* hostname, int port, int* fd)
 
    if (p == NULL)
    {
-      ZF_LOGD("pgprtdbg_connect: failed to connect");
+      pgprtdbg_log_lock(shmem);
+      pgprtdbg_log_line(shmem, "pgprtdbg_connect: failed to connect");
+      pgprtdbg_log_unlock(shmem);
       return 1;
    }
 
@@ -260,7 +259,6 @@ pgprtdbg_tcp_nodelay(int fd, void* shmem)
    {
       if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &yes, optlen) == -1)
       {
-         ZF_LOGD("tcp_nodelay: %d %s", fd, strerror(errno));
          return 1;
       }
    }
@@ -278,13 +276,11 @@ pgprtdbg_socket_buffers(int fd, void* shmem)
 
    if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &config->buffer_size, optlen) == -1)
    {
-      ZF_LOGD("socket_buffers: SO_RCVBUF %d %s", fd, strerror(errno));
       return 1;
    }
 
    if (setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &config->buffer_size, optlen) == -1)
    {
-      ZF_LOGD("socket_buffers: SO_SNDBUF %d %s", fd, strerror(errno));
       return 1;
    }
 
@@ -324,7 +320,9 @@ bind_host(const char* hostname, int port, void* shmem, int** fds, int* length)
    if ((rv = getaddrinfo(hostname, sport, &hints, &servinfo)) != 0)
    {
       free(sport);
-      ZF_LOGE("getaddrinfo: %s:%d (%s)", hostname, port, gai_strerror(rv));
+      pgprtdbg_log_lock(shmem);
+      pgprtdbg_log_line(shmem, "getaddrinfo: %s:%d (%s)", hostname, port, gai_strerror(rv));
+      pgprtdbg_log_unlock(shmem);
       return 1;
    }
 
@@ -343,13 +341,14 @@ bind_host(const char* hostname, int port, void* shmem, int** fds, int* length)
    {
       if ((sockfd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol)) == -1)
       {
-         ZF_LOGD("server: socket: %s:%d (%s)", hostname, port, strerror(errno));
+         pgprtdbg_log_lock(shmem);
+         pgprtdbg_log_line(shmem, "server: socket: %s:%d (%s)", hostname, port, strerror(errno));
+         pgprtdbg_log_unlock(shmem);
          continue;
       }
 
       if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
       {
-         ZF_LOGD("server: so_reuseaddr: %d %s", sockfd, strerror(errno));
          pgprtdbg_disconnect(sockfd);
          continue;
       }
@@ -369,14 +368,18 @@ bind_host(const char* hostname, int port, void* shmem, int** fds, int* length)
       if (bind(sockfd, addr->ai_addr, addr->ai_addrlen) == -1)
       {
          pgprtdbg_disconnect(sockfd);
-         ZF_LOGD("server: bind: %s:%d (%s)", hostname, port, strerror(errno));
+         pgprtdbg_log_lock(shmem);
+         pgprtdbg_log_line(shmem, "server: bind: %s:%d (%s)", hostname, port, strerror(errno));
+         pgprtdbg_log_unlock(shmem);
          continue;
       }
 
       if (listen(sockfd, config->backlog) == -1)
       {
          pgprtdbg_disconnect(sockfd);
-         ZF_LOGD("server: listen: %s:%d (%s)", hostname, port, strerror(errno));
+         pgprtdbg_log_lock(shmem);
+         pgprtdbg_log_line(shmem, "server: listen: %s:%d (%s)", hostname, port, strerror(errno));
+         pgprtdbg_log_unlock(shmem);
          continue;
       }
 

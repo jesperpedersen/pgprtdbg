@@ -36,9 +36,6 @@
 #include <worker.h>
 #include <utils.h>
 
-#define ZF_LOG_TAG "worker"
-#include <zf_log.h>
-
 /* system */
 #include <ev.h>
 #include <stdlib.h>
@@ -71,7 +68,6 @@ pgprtdbg_worker(int client_fd, void* shmem)
    memset(&client_io, 0, sizeof(struct worker_io));
    memset(&server_io, 0, sizeof(struct worker_io));
 
-
    for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++)
    {
       if (config->pids[i] == 0)
@@ -84,8 +80,6 @@ pgprtdbg_worker(int client_fd, void* shmem)
    /* Connect */
    if (!pgprtdbg_connect(shmem, config->server[0].host, config->server[0].port, &server_fd))
    {
-      ZF_LOGD("pgprtdbg_worker: PID %d (%d -> %d)", pid, client_fd, server_fd);
-
       atomic_fetch_add(&config->active_connections, 1);
       connected = true;
       
@@ -99,7 +93,7 @@ pgprtdbg_worker(int client_fd, void* shmem)
       server_io.server_fd = server_fd;
       server_io.shmem = shmem;
       
-      loop = ev_loop_new(pgprtdbg_libev(config->libev));
+      loop = ev_loop_new(pgprtdbg_libev(shmem, config->libev));
 
       ev_signal_init((struct ev_signal*)&signal_watcher, sigquit_cb, SIGQUIT);
       signal_watcher.shmem = shmem;
@@ -114,7 +108,6 @@ pgprtdbg_worker(int client_fd, void* shmem)
       }
    }
 
-   ZF_LOGD("Disconnect: Client(%d) Server(%d)", client_fd, server_fd);
    pgprtdbg_disconnect(client_fd);
    pgprtdbg_disconnect(server_fd);
 
@@ -151,8 +144,6 @@ pgprtdbg_worker(int client_fd, void* shmem)
 static void
 sigquit_cb(struct ev_loop *loop, ev_signal *w, int revents)
 {
-   ZF_LOGD("pgprtdbg: SIGQUIT for PID %d", getpid());
-
    exit_code = WORKER_FAILURE;
    running = 0;
    ev_break(loop, EVBREAK_ALL);

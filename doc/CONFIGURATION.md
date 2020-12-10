@@ -25,8 +25,7 @@ See a [sample](./etc/pgprtdbg.conf) configuration for running `pgprtdbg` on `loc
 | host | | String | Yes | The bind address for pgprtdbg |
 | port | | Int | Yes | The bind port for pgprtdbg |
 | output | | String | Yes | The output location |
-| log_type | console | String | No | The logging type (console, file, syslog) |
-| log_level | info | String | No | The logging level (fatal, error, warn, info, debug1, ..., debug5) |
+| log_type | console | String | No | The logging type (console, file) |
 | log_path | pgprtdbg.log | String | No | The log file location |
 | output_sockets | off | Bool | No | Output socket descriptors |
 | libev | `auto` | String | No | Select the [libev](http://software.schmorp.de/pkg/libev.html) backend to use. Valid options: `auto`, `select`, `poll`, `epoll`, `linuxaio`, `iouring`, `devpoll` and `port` |

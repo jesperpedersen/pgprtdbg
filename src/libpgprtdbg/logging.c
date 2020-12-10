@@ -29,61 +29,18 @@
 /* pgprtdbg */
 #include <pgprtdbg.h>
 #include <logging.h>
-#include <zf_log.h>
 
 /* system */
+#include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <syslog.h>
+#include <time.h>
 
-FILE *log_file;
+#define LINE_LENGTH 32
 
-void
-file_callback(const zf_log_message *msg, void *arg)
-{
-   (void)arg;
-   *msg->p = '\n';
-   fwrite(msg->buf, msg->p - msg->buf + 1, 1, log_file);
-   fflush(log_file);
-}
-
-int
-syslog_level(const int lvl)
-{
-   switch (lvl)
-   {
-      /* case PGPRTDBG_LOGGING_LEVEL_DEBUG5: */
-      /* case PGPRTDBG_LOGGING_LEVEL_DEBUG4: */
-      /* case PGPRTDBG_LOGGING_LEVEL_DEBUG3: */
-      case PGPRTDBG_LOGGING_LEVEL_DEBUG2:
-      case PGPRTDBG_LOGGING_LEVEL_DEBUG1:
-         return LOG_DEBUG;
-      case PGPRTDBG_LOGGING_LEVEL_INFO:
-         return LOG_INFO;
-      case PGPRTDBG_LOGGING_LEVEL_WARN:
-         return LOG_WARNING;
-      case PGPRTDBG_LOGGING_LEVEL_ERROR:
-         return LOG_ERR;
-      case PGPRTDBG_LOGGING_LEVEL_FATAL:
-         return LOG_EMERG;
-      default:
-         return PGPRTDBG_LOGGING_LEVEL_FATAL;
-   }
-}
-
-void
-syslog_callback(const zf_log_message *msg, void *arg)
-{
-   (void)arg;
-   /* p points to the log message end. By default, message is not terminated
-    * with 0, but it has some space allocated for EOL area, so there is always
-    * some place for terminating zero in the end (see ZF_LOG_EOL_SZ define in
-    * zf_log.c).
-    */
-   *msg->p = 0;
-   syslog(syslog_level(msg->lvl), "%s", msg->tag_b);
-}
+FILE *log_file = NULL;
 
 /**
  *
@@ -94,9 +51,6 @@ pgprtdbg_start_logging(void* shmem)
    struct configuration* config;
 
    config = (struct configuration*)shmem;
-
-   zf_log_set_tag_prefix("pgprtdbg");
-   zf_log_set_output_level(config->log_level);
 
    if (config->log_type == PGPRTDBG_LOGGING_TYPE_FILE)
    {
@@ -111,18 +65,10 @@ pgprtdbg_start_logging(void* shmem)
 
       if (!log_file)
       {
-         ZF_LOGW("Failed to open log file %s", strlen(config->log_path) > 0 ? config->log_path : "pgprtdbg.log");
+         printf("Failed to open log file %s due to %s\n", strlen(config->log_path) > 0 ? config->log_path : "pgprtdbg.log", strerror(errno));
+         errno = 0;
          return 1;
       }
-
-      zf_log_set_output_v(ZF_LOG_PUT_STD, 0, file_callback);
-   }
-   else if (config->log_type == PGPRTDBG_LOGGING_TYPE_SYSLOG)
-   {
-      openlog("pgprtdbg", LOG_CONS | LOG_PERROR | LOG_PID, LOG_USER);
-
-      const unsigned put_mask = ZF_LOG_PUT_STD & !ZF_LOG_PUT_CTX;
-      zf_log_set_output_v(put_mask, 0, syslog_callback);
    }
 
    return 0;
@@ -142,10 +88,145 @@ pgprtdbg_stop_logging(void* shmem)
    {
       return fclose(log_file);
    }
-   else if (config->log_type == PGPRTDBG_LOGGING_TYPE_SYSLOG)
-   {
-      closelog();
-   }
    
    return 0;
+}
+
+void
+pgprtdbg_log_lock(void* shmem)
+{
+   time_t start_time;
+   signed char isfree;
+   struct configuration* config;
+
+   config = (struct configuration*)shmem;
+
+   start_time = time(NULL);
+
+retry:
+   isfree = STATE_FREE;
+
+   if (atomic_compare_exchange_strong(&config->log_lock, &isfree, STATE_IN_USE))
+   {
+      return;
+   }
+   else
+   {
+      /* Sleep for 1ms */
+      struct timespec ts;
+      ts.tv_sec = 0;
+      ts.tv_nsec = 1000000L;
+      nanosleep(&ts, NULL);
+
+      double diff = difftime(time(NULL), start_time);
+      if (diff >= 1)
+      {
+         goto timeout;
+      }
+
+      goto retry;
+   }
+
+timeout:
+   return;
+}
+
+void
+pgprtdbg_log_unlock(void* shmem)
+{
+   struct configuration* config;
+
+   config = (struct configuration*)shmem;
+
+   atomic_store(&config->log_lock, STATE_FREE);
+}
+
+void
+pgprtdbg_log_line(void* shmem, char* fmt, ...)
+{
+   va_list vl;
+   struct configuration* config;
+
+   config = (struct configuration*)shmem;
+
+   va_start(vl, fmt);
+
+   if (config->log_type == PGPRTDBG_LOGGING_TYPE_CONSOLE)
+   {
+      vfprintf(stdout, fmt, vl);
+      fprintf(stdout, "\n");
+      fflush(stdout);
+   }
+   else if (config->log_type == PGPRTDBG_LOGGING_TYPE_FILE)
+   {
+      vfprintf(log_file, fmt, vl);
+      fprintf(log_file, "\n");
+      fflush(log_file);
+   }
+
+   va_end(vl);
+}
+
+void
+pgprtdbg_log_mem(void* shmem, void* data, size_t size)
+{
+   char buf[8192];
+   int j = 0;
+   int k = 0;
+   struct configuration* config;
+
+   config = (struct configuration*)shmem;
+
+   memset(&buf, 0, sizeof(buf));
+
+   for (int i = 0; i < size; i++)
+   {
+      if (k == LINE_LENGTH)
+      {
+         buf[j] = '\n';
+         j++;
+         k = 0;
+      }
+      sprintf(&buf[j], "%02X", (signed char) *((char*)data + i));
+      j += 2;
+      k++;
+   }
+
+   buf[j] = '\n';
+   j++;
+   k = 0;
+
+   for (int i = 0; i < size; i++)
+   {
+      signed char c = (signed char) *((char*)data + i);
+      if (k == LINE_LENGTH)
+      {
+         buf[j] = '\n';
+         j++;
+         k = 0;
+      }
+      if (c >= 32 && c <= 127)
+      {
+         buf[j] = c;
+      }
+      else
+      {
+         buf[j] = '?';
+      }
+      j++;
+      k++;
+   }
+
+   if (config->log_type == PGPRTDBG_LOGGING_TYPE_CONSOLE)
+   {
+      fprintf(stdout, "%s", buf);
+      fprintf(stdout, "\n");
+      fflush(stdout);
+   }
+   else if (config->log_type == PGPRTDBG_LOGGING_TYPE_FILE)
+   {
+      fprintf(log_file, "%s", buf);
+      fprintf(log_file, "\n");
+      fflush(log_file);
+   }
 }

@@ -46,7 +46,6 @@ static void extract_key_value(char* str, char** key, char** value);
 static int as_int(char* str);
 static bool as_bool(char* str);
 static int as_logging_type(char* str);
-static int as_logging_level(char* str);
 
 /**
  *
@@ -67,7 +66,7 @@ pgprtdbg_init_configuration(void* shmem, size_t size)
    config->backlog = -1;
 
    config->log_type = PGPRTDBG_LOGGING_TYPE_CONSOLE;
-   config->log_level = PGPRTDBG_LOGGING_LEVEL_INFO;
+   atomic_init(&config->log_lock, STATE_FREE);
 
    if (sem_init(&config->lock, 1, 1) == -1)
    {
@@ -224,17 +223,6 @@ pgprtdbg_read_configuration(char* filename, void* shmem)
                   if (!strcmp(section, "pgprtdbg"))
                   {
                      config->log_type = as_logging_type(value);
-                  }
-                  else
-                  {
-                     unknown = true;
-                  }
-               }
-               else if (!strcmp(key, "log_level"))
-               {
-                  if (!strcmp(section, "pgprtdbg"))
-                  {
-                     config->log_level = as_logging_level(value);
                   }
                   else
                   {
@@ -470,40 +458,5 @@ static int as_logging_type(char* str)
    if (!strcasecmp(str, "file"))
       return PGPRTDBG_LOGGING_TYPE_FILE;
 
-   if (!strcasecmp(str, "syslog"))
-      return PGPRTDBG_LOGGING_TYPE_SYSLOG;
-
    return 0;
-}
-
-static int as_logging_level(char* str)
-{
-   if (!strcasecmp(str, "debug5"))
-      return PGPRTDBG_LOGGING_LEVEL_DEBUG5;
-
-   if (!strcasecmp(str, "debug4"))
-      return PGPRTDBG_LOGGING_LEVEL_DEBUG4;
-
-   if (!strcasecmp(str, "debug3"))
-      return PGPRTDBG_LOGGING_LEVEL_DEBUG3;
-
-   if (!strcasecmp(str, "debug2"))
-      return PGPRTDBG_LOGGING_LEVEL_DEBUG2;
-
-   if (!strcasecmp(str, "debug1"))
-      return PGPRTDBG_LOGGING_LEVEL_DEBUG1;
-
-   if (!strcasecmp(str, "info"))
-      return PGPRTDBG_LOGGING_LEVEL_INFO;
-
-   if (!strcasecmp(str, "warn"))
-      return PGPRTDBG_LOGGING_LEVEL_WARN;
-
-   if (!strcasecmp(str, "error"))
-      return PGPRTDBG_LOGGING_LEVEL_ERROR;
-
-   if (!strcasecmp(str, "fatal"))
-      return PGPRTDBG_LOGGING_LEVEL_FATAL;
-
-   return PGPRTDBG_LOGGING_LEVEL_INFO;
 }

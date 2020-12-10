@@ -37,17 +37,6 @@ extern "C" {
 
 #define PGPRTDBG_LOGGING_TYPE_CONSOLE 0
 #define PGPRTDBG_LOGGING_TYPE_FILE    1
-#define PGPRTDBG_LOGGING_TYPE_SYSLOG  2
-
-#define PGPRTDBG_LOGGING_LEVEL_DEBUG5  1
-#define PGPRTDBG_LOGGING_LEVEL_DEBUG4  1
-#define PGPRTDBG_LOGGING_LEVEL_DEBUG3  1
-#define PGPRTDBG_LOGGING_LEVEL_DEBUG2  1
-#define PGPRTDBG_LOGGING_LEVEL_DEBUG1  2
-#define PGPRTDBG_LOGGING_LEVEL_INFO    3
-#define PGPRTDBG_LOGGING_LEVEL_WARN    4
-#define PGPRTDBG_LOGGING_LEVEL_ERROR   5
-#define PGPRTDBG_LOGGING_LEVEL_FATAL   6
 
 /**
  * Start the logging system
@@ -64,6 +53,37 @@ pgprtdbg_start_logging(void* shmem);
  */
 int
 pgprtdbg_stop_logging(void* shmem);
+
+/**
+ * Lock the log
+ * @param shmem The shared memory segment
+ */
+void
+pgprtdbg_log_lock(void* shmem);
+
+/**
+ * Unlock the log
+ * @param shmem The shared memory segment
+ */
+void
+pgprtdbg_log_unlock(void* shmem);
+
+/**
+ * Log a line
+ * @param shmem The shared memory segment
+ * @param fmt The string format
+ */
+void
+pgprtdbg_log_line(void* shmem, char* fmt, ...);
+
+/**
+ * Log a data segment
+ * @param shmem The shared memory segment
+ * @param data The data
+ * @param size The sie of the data
+ */
+void
+pgprtdbg_log_mem(void* shmem, void* data, size_t size);
 
 #ifdef __cplusplus
 }

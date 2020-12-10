@@ -111,17 +111,19 @@ pgprtdbg_write_string(void* data, char* s);
 
 /**
  * Print the available libev engines
+ * @param shmem The shared memory segment
  */
 void
-pgprtdbg_libev_engines();
+pgprtdbg_libev_engines(void* shmem);
 
 /**
  * Get the constant for a libev engine
+ * @param shmem The shared memory segment
  * @param engine The name of the engine
  * @return The constant
  */
 unsigned int
-pgprtdbg_libev(char* engine);
+pgprtdbg_libev(void* shmem, char* engine);
 
 /**
  * Get the name for a libev engine

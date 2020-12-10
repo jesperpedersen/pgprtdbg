@@ -28,13 +28,11 @@
 
 /* pgprtdbg */
 #include <pgprtdbg.h>
+#include <logging.h>
 #include <message.h>
 #include <pipeline.h>
 #include <protocol.h>
 #include <worker.h>
-
-#define ZF_LOG_TAG "pipeline"
-#include <zf_log.h>
 
 /* system */
 #include <errno.h>
@@ -51,8 +49,6 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
    struct message* msg = NULL;
 
    wi = (struct worker_io*)watcher;
-
-   ZF_LOGV("pipeline_client: %d", revents);
 
    status = pgprtdbg_read_message(wi->client_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
@@ -79,18 +75,21 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
       goto client_error;
    }
 
-   ZF_LOGV("pipeline_client: Done");
    ev_break(loop, EVBREAK_ONE);
    return;
 
 client_error:
    if (errno != 0)
    {
-      ZF_LOGD("client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
+      pgprtdbg_log_lock(wi->shmem);
+      pgprtdbg_log_line(wi->shmem, "[C] client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
+      pgprtdbg_log_unlock(wi->shmem);
    }
    else
    {
-      ZF_LOGD("client_error: client_fd %d (%d)", wi->client_fd, status);
+      pgprtdbg_log_lock(wi->shmem);
+      pgprtdbg_log_line(wi->shmem, "[C] client_error: client_fd %d (%d)", wi->client_fd, status);
+      pgprtdbg_log_unlock(wi->shmem);
    }
 
    errno = 0;
@@ -102,11 +101,15 @@ client_error:
 server_error:
    if (errno != 0)
    {
-      ZF_LOGD("server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
+      pgprtdbg_log_lock(wi->shmem);
+      pgprtdbg_log_line(wi->shmem, "[C] server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
+      pgprtdbg_log_unlock(wi->shmem);
    }
    else
    {
-      ZF_LOGD("server_error: server_fd %d (%d)", wi->server_fd, status);
+      pgprtdbg_log_lock(wi->shmem);
+      pgprtdbg_log_line(wi->shmem, "[C] server_error: server_fd %d (%d)", wi->server_fd, status);
+      pgprtdbg_log_unlock(wi->shmem);
    }
 
    errno = 0;
@@ -125,8 +128,6 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
    struct message* msg = NULL;
 
    wi = (struct worker_io*)watcher;
-
-   ZF_LOGV("pipeline_server: %d", revents);
 
    status = pgprtdbg_read_message(wi->server_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
@@ -166,18 +167,21 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
       goto server_error;
    }
 
-   ZF_LOGV("pipeline_server: Done");
    ev_break(loop, EVBREAK_ONE);
    return;
 
 client_error:
    if (errno != 0)
    {
-      ZF_LOGD("client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
+      pgprtdbg_log_lock(wi->shmem);
+      pgprtdbg_log_line(wi->shmem, "[S] client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
+      pgprtdbg_log_unlock(wi->shmem);
    }
    else
    {
-      ZF_LOGD("client_error: client_fd %d (%d)", wi->client_fd, status);
+      pgprtdbg_log_lock(wi->shmem);
+      pgprtdbg_log_line(wi->shmem, "[S] client_error: client_fd %d (%d)", wi->client_fd, status);
+      pgprtdbg_log_unlock(wi->shmem);
    }
 
    errno = 0;
@@ -189,11 +193,15 @@ client_error:
 server_error:
    if (errno != 0)
    {
-      ZF_LOGD("server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
+      pgprtdbg_log_lock(wi->shmem);
+      pgprtdbg_log_line(wi->shmem, "[S] server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
+      pgprtdbg_log_unlock(wi->shmem);
    }
    else
    {
-      ZF_LOGD("server_error: server_fd %d (%d)", wi->server_fd, status);
+      pgprtdbg_log_lock(wi->shmem);
+      pgprtdbg_log_line(wi->shmem, "[S] server_error: server_fd %d (%d)", wi->server_fd, status);
+      pgprtdbg_log_unlock(wi->shmem);
    }
 
    errno = 0;

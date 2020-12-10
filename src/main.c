@@ -35,9 +35,6 @@
 #include <utils.h>
 #include <worker.h>
 
-#define ZF_LOG_TAG "main"
-#include <zf_log.h>
-
 /* system */
 #include <errno.h>
 #include <ev.h>
@@ -249,11 +246,11 @@ main(int argc, char **argv)
    }
 
    /* libev */
-   loop = ev_default_loop(pgprtdbg_libev(config->libev));
+   loop = ev_default_loop(pgprtdbg_libev(shmem, config->libev));
    if (!loop)
    {
       printf("pgprtdbg: No loop implementation (%x) (%x)\n",
-             pgprtdbg_libev(config->libev), ev_supported_backends());
+             pgprtdbg_libev(shmem, config->libev), ev_supported_backends());
       exit(1);
    }
 
@@ -279,21 +276,25 @@ main(int argc, char **argv)
       ev_io_start(loop, (struct ev_io*)&io_main[i]);
    }
 
-   ZF_LOGI("pgprtdbg: started on %s:%d", config->host, config->port);
+   pgprtdbg_log_lock(shmem);
+   pgprtdbg_log_line(shmem, "pgprtdbg: started on %s:%d", config->host, config->port);
    for (int i = 0; i < length; i++)
    {
-      ZF_LOGD("Socket %d", *(fds + i));
+      pgprtdbg_log_line(shmem, "Socket %d", *(fds + i));
    }
-   pgprtdbg_libev_engines();
-   ZF_LOGD("libev engine: %s", pgprtdbg_libev_engine(ev_backend(loop)));
-   ZF_LOGD("Configuration size: %lu", size);
+   pgprtdbg_libev_engines(shmem);
+   pgprtdbg_log_line(shmem, "libev engine: %s", pgprtdbg_libev_engine(ev_backend(loop)));
+   pgprtdbg_log_line(shmem, "Configuration size: %lu", size);
+   pgprtdbg_log_unlock(shmem);
 
    while (keep_running)
    {
       ev_loop(loop, 0);
    }
 
-   ZF_LOGI("pgprtdbg: shutdown");
+   pgprtdbg_log_lock(shmem);
+   pgprtdbg_log_line(shmem, "pgprtdbg: shutdown");
+   pgprtdbg_log_unlock(shmem);
 
    shutdown_io(loop);
 
@@ -306,7 +307,6 @@ main(int argc, char **argv)
    {
       if (config->pids[i] != 0)
       {
-         ZF_LOGD("SIGQUIT: %d", config->pids[i]);
          kill(config->pids[i], SIGQUIT);
       }
    }
@@ -334,20 +334,16 @@ accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
    struct accept_io* ai;
    struct configuration* config;
 
-   ZF_LOGV("accept_cb: sockfd ready (%d)", revents);
-
    ai = (struct accept_io*)watcher;
    config = (struct configuration*)ai->shmem;
 
    if (EV_ERROR & revents)
    {
-      ZF_LOGD("accept_cb: invalid event: %s", strerror(errno));
       return;
    }
 
    if (atomic_load(&config->active_connections) > MAX_NUMBER_OF_CONNECTIONS)
    {
-      ZF_LOGD("accept_cb: Too many connections");
       return;
    }
 
@@ -355,7 +351,6 @@ accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
    client_fd = accept(watcher->fd, (struct sockaddr *)&client_addr, &client_addr_length);
    if (client_fd == -1)
    {
-      ZF_LOGD("accept_cb: accept: %s", strerror(errno));
       return;
    }
 
@@ -373,8 +368,6 @@ accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 static void
 shutdown_cb(struct ev_loop *loop, ev_signal *w, int revents)
 {
-   ZF_LOGD("pgprtdbg: shutdown requested");
-
    ev_break(loop, EVBREAK_ALL);
    keep_running = 0;
 }
@@ -382,7 +375,5 @@ shutdown_cb(struct ev_loop *loop, ev_signal *w, int revents)
 static void
 coredump_cb(struct ev_loop *loop, ev_signal *w, int revents)
 {
-   ZF_LOGI("pgprtdbg: core dump requested");
-
    abort();
 }

@@ -44,8 +44,6 @@ extern "C" {
 
 #define VERSION "0.2.0"
 
-#define ZF_LOG_LEVEL ZF_LOG_VERBOSE
-
 #define MAX_BUFFER_SIZE      65535
 #define DEFAULT_BUFFER_SIZE  65535
 
@@ -53,6 +51,9 @@ extern "C" {
 #define MISC_LENGTH 128
 
 #define MAX_NUMBER_OF_CONNECTIONS 1000
+
+#define STATE_FREE   0
+#define STATE_IN_USE 1
 
 #define likely(x)    __builtin_expect (!!(x), 1)
 #define unlikely(x)  __builtin_expect (!!(x), 0)
@@ -82,8 +83,8 @@ struct configuration
    bool output_sockets;      /**< Output socket identifiers */
 
    int log_type;               /**< The logging type */
-   int log_level;              /**< The logging level */
    char log_path[MISC_LENGTH]; /**< The logging path */
+   atomic_schar log_lock;      /**< The logging lock */
 
    char libev[MISC_LENGTH]; /**< Name of libev mode */
    int buffer_size;         /**< Socket buffer size */

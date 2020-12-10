@@ -31,9 +31,6 @@
 #include <logging.h>
 #include <utils.h>
 
-#define ZF_LOG_TAG "utils"
-#include <zf_log.h>
-
 /* system */
 #include <ev.h>
 #include <pwd.h>
@@ -166,46 +163,46 @@ pgprtdbg_write_string(void* data, char* s)
 }
 
 void
-pgprtdbg_libev_engines()
+pgprtdbg_libev_engines(void* shmem)
 {
    unsigned int engines = ev_supported_backends();
 
    if (engines & EVBACKEND_SELECT)
    {
-      ZF_LOGD("libev available: select");
+      pgprtdbg_log_line(shmem, "libev available: select");
    }
    if (engines & EVBACKEND_POLL)
    {
-      ZF_LOGD("libev available: poll");
+      pgprtdbg_log_line(shmem, "libev available: poll");
    }
    if (engines & EVBACKEND_EPOLL)
    {
-      ZF_LOGD("libev available: epoll");
+      pgprtdbg_log_line(shmem, "libev available: epoll");
    }
    if (engines & EVBACKEND_LINUXAIO)
    {
-      ZF_LOGD("libev available: linuxaio");
+      /* Not supported */
    }
    if (engines & EVBACKEND_IOURING)
    {
-      ZF_LOGD("libev available: iouring");
+      pgprtdbg_log_line(shmem, "libev available: iouring");
    }
    if (engines & EVBACKEND_KQUEUE)
    {
-      ZF_LOGD("libev available: kqueue");
+      pgprtdbg_log_line(shmem, "libev available: kqueue");
    }
    if (engines & EVBACKEND_DEVPOLL)
    {
-      ZF_LOGD("libev available: devpoll");
+      pgprtdbg_log_line(shmem, "libev available: devpoll");
    }
    if (engines & EVBACKEND_PORT)
    {
-      ZF_LOGD("libev available: port");
+      pgprtdbg_log_line(shmem, "libev available: port");
    }
 }
 
 unsigned int
-pgprtdbg_libev(char* engine)
+pgprtdbg_libev(void* shmem, char* engine)
 {
    unsigned int engines = ev_supported_backends();
 
@@ -219,7 +216,9 @@ pgprtdbg_libev(char* engine)
          }
          else
          {
-            ZF_LOGW("libev not available: select");
+            pgprtdbg_log_lock(shmem);
+            pgprtdbg_log_line(shmem, "libev not available: select");
+            pgprtdbg_log_unlock(shmem);
          }
       }
       else if (!strcmp("poll", engine))
@@ -230,7 +229,9 @@ pgprtdbg_libev(char* engine)
          }
          else
          {
-            ZF_LOGW("libev not available: poll");
+            pgprtdbg_log_lock(shmem);
+            pgprtdbg_log_line(shmem, "libev not available: poll");
+            pgprtdbg_log_unlock(shmem);
          }
       }
       else if (!strcmp("epoll", engine))
@@ -241,19 +242,14 @@ pgprtdbg_libev(char* engine)
          }
          else
          {
-            ZF_LOGW("libev not available: epoll");
+            pgprtdbg_log_lock(shmem);
+            pgprtdbg_log_line(shmem, "libev not available: epoll");
+            pgprtdbg_log_unlock(shmem);
          }
       }
       else if (!strcmp("linuxaio", engine))
       {
-         if (engines & EVBACKEND_LINUXAIO)
-         {
-            return EVBACKEND_LINUXAIO;
-         }
-         else
-         {
-            ZF_LOGW("libev not available: linuxaio");
-         }
+         return EVFLAG_AUTO;
       }
       else if (!strcmp("iouring", engine))
       {
@@ -263,7 +259,9 @@ pgprtdbg_libev(char* engine)
          }
          else
          {
-            ZF_LOGW("libev not available: iouring");
+            pgprtdbg_log_lock(shmem);
+            pgprtdbg_log_line(shmem, "libev not available: iouring");
+            pgprtdbg_log_unlock(shmem);
          }
       }
       else if (!strcmp("devpoll", engine))
@@ -274,7 +272,9 @@ pgprtdbg_libev(char* engine)
          }
          else
          {
-            ZF_LOGW("libev not available: devpoll");
+            pgprtdbg_log_lock(shmem);
+            pgprtdbg_log_line(shmem, "libev not available: devpoll");
+            pgprtdbg_log_unlock(shmem);
          }
       }
       else if (!strcmp("port", engine))
@@ -285,7 +285,9 @@ pgprtdbg_libev(char* engine)
          }
          else
          {
-            ZF_LOGW("libev not available: port");
+            pgprtdbg_log_lock(shmem);
+            pgprtdbg_log_line(shmem, "libev not available: port");
+            pgprtdbg_log_unlock(shmem);
          }
       }
       else if (!strcmp("auto", engine) || !strcmp("", engine))
@@ -294,7 +296,9 @@ pgprtdbg_libev(char* engine)
       }
       else
       {
-         ZF_LOGW("libev unknown option: %s", engine);
+         pgprtdbg_log_lock(shmem);
+         pgprtdbg_log_line(shmem, "libev unknown option: %s", engine);
+         pgprtdbg_log_unlock(shmem);
       }
    }
 

@@ -30,9 +30,6 @@
 #include <pgprtdbg.h>
 #include <memory.h>
 
-#define ZF_LOG_TAG "memory"
-#include <zf_log.h>
-
 /* system */
 #include <stdlib.h>
 #include <string.h>

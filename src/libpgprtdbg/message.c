@@ -35,9 +35,6 @@
 #include <worker.h>
 #include <utils.h>
 
-#define ZF_LOG_TAG "message"
-#include <zf_log.h>
-
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
@@ -247,7 +244,6 @@ write_message(int socket, struct message* msg)
             return MESSAGE_STATUS_OK;
          }
 
-         ZF_LOGD("Write %d - %zd/%zd vs %zd", socket, numbytes, totalbytes, msg->length);
          keep_write = true;
          errno = 0;
       }

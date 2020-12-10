@@ -35,9 +35,6 @@
 #include <worker.h>
 #include <utils.h>
 
-#define ZF_LOG_TAG "protocol"
-#include <zf_log.h>
-
 /* system */
 #include <ev.h>
 #include <pwd.h>
@@ -50,44 +47,44 @@
 
 static void output_write(char* id, int from, int to, void* shmem, signed char kind, char* text);
 
-static int fe_zero(int client_fd, struct message* msg, char** text);
-static int fe_B(struct message* msg, char** text);
-static int fe_C(struct message* msg, char** text);
-static int fe_D(struct message* msg, char** text);
-static int fe_E(struct message* msg, char** text);
-static int fe_F(struct message* msg, char** text);
-static int fe_H(struct message* msg, char** text);
-static int fe_P(struct message* msg, char** text);
-static int fe_Q(struct message* msg, char** text);
-static int fe_S(struct message* msg, char** text);
-static int fe_X(struct message* msg, char** text);
-static int fe_c(struct message* msg, char** text);
-static int fe_d(struct message* msg, char** text);
-static int fe_f(struct message* msg, char** text);
-static int fe_p(struct message* msg, char** text);
+static int fe_zero(void* shmem, struct message* msg, int client_fd, char** text);
+static int fe_B(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_C(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_D(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_E(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_F(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_H(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_P(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_Q(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_S(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_X(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_c(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_d(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_f(void* shmem, struct message* msg, const int offset, char** text);
+static int fe_p(void* shmem, struct message* msg, const int offset, char** text);
 
-static int be_one(const struct message* msg, const int offset, char** text);
-static int be_two(const struct message* msg, const int offset, char** text);
-static int be_three(const struct message* msg, const int offset, char** text);
-static int be_A(const struct message* msg, const int offset, char** text);
-static int be_C(const struct message* msg, const int offset, char** text);
-static int be_D(const struct message* msg, const int offset, const int from, const int to, char** text, struct message** new_msg, int* new_offset);
-static int be_E(const struct message* msg, const int offset, char** text);
-static int be_G(const struct message* msg, const int offset, char** text);
-static int be_H(const struct message* msg, const int offset, char** text);
-static int be_I(const struct message* msg, const int offset, char** text);
-static int be_K(const struct message* msg, const int offset, char** text);
-static int be_N(const struct message* msg, const int offset, char** text);
-static int be_R(const struct message* msg, const int offset, char** text);
-static int be_S(const struct message* msg, const int offset, char** text);
-static int be_T(const struct message* msg, const int offset, char** text);
-static int be_V(const struct message* msg, const int offset, char** text);
-static int be_W(const struct message* msg, const int offset, char** text);
-static int be_Z(const struct message* msg, const int offset, char** text);
-static int be_n(const struct message* msg, const int offset, char** text);
-static int be_s(const struct message* msg, const int offset, char** text);
-static int be_t(const struct message* msg, const int offset, char** text);
-static int be_v(const struct message* msg, const int offset, char** text);
+static int be_one(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_two(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_three(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_A(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_C(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_D(void* shmem, const struct message* msg, const int offset, const int from, const int to, char** text, struct message** new_msg, int* new_offset);
+static int be_E(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_G(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_H(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_I(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_K(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_N(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_R(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_S(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_T(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_V(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_W(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_Z(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_n(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_s(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_t(void* shmem, const struct message* msg, const int offset, char** text);
+static int be_v(void* shmem, const struct message* msg, const int offset, char** text);
 
 void
 pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
@@ -96,7 +93,10 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
    signed char kind;
    int offset;
 
-   ZF_LOGV_MEM(msg->data, msg->length, "Client message (%zd) %p:", msg->length, (const void *)msg->data);
+   pgprtdbg_log_lock(shmem);
+   pgprtdbg_log_line(shmem, "--------");
+   pgprtdbg_log_line(shmem, "Message:");
+   pgprtdbg_log_mem(shmem, msg->data, msg->length);
 
    offset = 0;
 
@@ -109,52 +109,59 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
          switch (kind)
          {
             case 0:
-               offset = fe_zero(from, msg, &text);
+               offset = fe_zero(shmem, msg, from, &text);
                break;
             case 'B':
-               offset = fe_B(msg, &text);
+               offset = fe_B(shmem, msg, offset, &text);
                break;
             case 'C':
-               offset = fe_C(msg, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = fe_C(shmem, msg, offset, &text);
                break;
             case 'D':
-               offset = fe_D(msg, &text);
+               offset = fe_D(shmem, msg, offset, &text);
                break;
             case 'E':
-               offset = fe_E(msg, &text);
+               offset = fe_E(shmem, msg, offset, &text);
                break;
             case 'F':
-               offset = fe_F(msg, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = fe_F(shmem, msg, offset, &text);
                break;
             case 'H':
-               offset = fe_H(msg, &text);
+               offset = fe_H(shmem, msg, offset, &text);
                break;
             case 'P':
-               offset = fe_P(msg, &text);
+               offset = fe_P(shmem, msg, offset, &text);
                break;
             case 'Q':
-               offset = fe_Q(msg, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = fe_Q(shmem, msg, offset, &text);
                break;
             case 'S':
-               offset = fe_S(msg, &text);
+               offset = fe_S(shmem, msg, offset, &text);
                break;
             case 'X':
-               offset = fe_X(msg, &text);
+               offset = fe_X(shmem, msg, offset, &text);
                break;
             case 'c':
-               offset = fe_c(msg, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = fe_c(shmem, msg, offset, &text);
                break;
             case 'd':
-               offset = fe_d(msg, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = fe_d(shmem, msg, offset, &text);
                break;
             case 'f':
-               offset = fe_f(msg, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = fe_f(shmem, msg, offset, &text);
                break;
             case 'p':
-               offset = fe_p(msg, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = fe_p(shmem, msg, offset, &text);
                break;
             default:
-               ZF_LOGI("Unsupported client message: %d (%d)", kind, msg->kind);
+               pgprtdbg_log_line(shmem, "Unsupported client message: %d (%d)", kind, msg->kind);
                offset = msg->length;
                break;
          }
@@ -173,7 +180,7 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
          switch (kind)
          {
             case 0:
-               offset = fe_zero(from, msg, &text);
+               offset = fe_zero(shmem, msg, from, &text);
                break;
             default:
                offset = msg->length;
@@ -199,6 +206,8 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
       exit_code = WORKER_CLIENT_FAILURE;
       running = 0;
    }
+
+   pgprtdbg_log_unlock(shmem);
 }
 
 void
@@ -211,7 +220,10 @@ pgprtdbg_server(int from, int to, void* shmem, struct message* msg)
    struct message* new_msg;
    int new_offset;
 
-   ZF_LOGV_MEM(msg->data, msg->length, "Server message (%zd) %p:", msg->length, (const void *)msg->data);
+   pgprtdbg_log_lock(shmem);
+   pgprtdbg_log_line(shmem, "--------");
+   pgprtdbg_log_line(shmem, "Message:");
+   pgprtdbg_log_mem(shmem, msg->data, msg->length);
 
    offset = 0;
    m = msg;
@@ -227,81 +239,87 @@ pgprtdbg_server(int from, int to, void* shmem, struct message* msg)
          switch (kind)
          {
             case '1':
-               offset = be_one(m, offset, &text);
+               offset = be_one(shmem, m, offset, &text);
                break;
             case '2':
-               offset = be_two(m, offset, &text);
+               offset = be_two(shmem, m, offset, &text);
                break;
             case '3':
-               offset = be_three(m, offset, &text);
+               offset = be_three(shmem, m, offset, &text);
                break;
             case 'A':
-               offset = be_A(m, offset, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = be_A(shmem, m, offset, &text);
                break;
             case 'C':
-               offset = be_C(m, offset, &text);
+               offset = be_C(shmem, m, offset, &text);
                break;
             case 'D':
-               offset = be_D(m, offset, from, to, &text, &new_msg, &new_offset);
+               offset = be_D(shmem, m, offset, from, to, &text, &new_msg, &new_offset);
                if (new_msg != NULL)
                {
                   m = new_msg;
                   offset = new_offset;
-                  ZF_LOGV_MEM(m->data, m->length, "Server message (%zd) %p:", m->length, (const void *)m->data);
                }
                break;
             case 'E':
-               offset = be_E(m, offset, &text);
+               offset = be_E(shmem, m, offset, &text);
                break;
             case 'G':
-               offset = be_G(m, offset, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = be_G(shmem, m, offset, &text);
                break;
             case 'H':
-               offset = be_H(m, offset, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = be_H(shmem, m, offset, &text);
                break;
             case 'I':
-               offset = be_I(m, offset, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = be_I(shmem, m, offset, &text);
                break;
             case 'K':
-               offset = be_K(m, offset, &text);
+               offset = be_K(shmem, m, offset, &text);
                break;
             case 'N':
-               offset = be_N(m, offset, &text);
+               offset = be_N(shmem, m, offset, &text);
                break;
             case 'R':
-               offset = be_R(m, offset, &text);
+               offset = be_R(shmem, m, offset, &text);
                break;
             case 'S':
-               offset = be_S(m, offset, &text);
+               offset = be_S(shmem, m, offset, &text);
                break;
             case 'T':
-               offset = be_T(m, offset, &text);
+               offset = be_T(shmem, m, offset, &text);
                break;
             case 'V':
-               offset = be_V(m, offset, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = be_V(shmem, m, offset, &text);
                break;
             case 'W':
-               offset = be_W(m, offset, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = be_W(shmem, m, offset, &text);
                break;
             case 'Z':
-               offset = be_Z(m, offset, &text);
+               offset = be_Z(shmem, m, offset, &text);
                break;
             case 'n':
-               offset = be_n(m, offset, &text);
+               offset = be_n(shmem, m, offset, &text);
                break;
             case 's':
-               offset = be_s(m, offset, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = be_s(shmem, m, offset, &text);
                break;
             case 't':
-               offset = be_t(m, offset, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = be_t(shmem, m, offset, &text);
                break;
             case 'v':
-               offset = be_v(m, offset, &text);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
+               offset = be_v(shmem, m, offset, &text);
                break;
             default:
-               ZF_LOGI("Unsupported server message: %d (%x)", kind, kind);
-               ZF_LOGI("Size: %zd", m->length);
-               ZF_LOGI_MEM(m->data, m->length, "Message %p:", (const void *)m->data);
+               pgprtdbg_log_line(shmem, "TODO: %c", kind);
                offset = m->length;
                break;
          }
@@ -320,7 +338,7 @@ pgprtdbg_server(int from, int to, void* shmem, struct message* msg)
          switch (kind)
          {
             case 'N':
-               offset = be_N(m, offset, &text);
+               offset = be_N(shmem, m, offset, &text);
                break;
             default:
                offset = m->length;
@@ -346,6 +364,8 @@ pgprtdbg_server(int from, int to, void* shmem, struct message* msg)
       exit_code = WORKER_SERVER_FAILURE;
       running = 0;
    }
+
+   pgprtdbg_log_unlock(shmem);
 }
 
 static void
@@ -418,13 +438,12 @@ output_write(char* id, int from, int to, void* shmem, signed char kind, char* te
 
 /* fe_zero */
 static int
-fe_zero(int client_fd, struct message* msg, char** text)
+fe_zero(void* shmem, struct message* msg, int client_fd, char** text)
 {
    int start, end;
    int counter;
    signed char c;
    char** array = NULL;
-   int32_t length;
    int32_t request;
 
    if (msg->length < 8)
@@ -432,10 +451,10 @@ fe_zero(int client_fd, struct message* msg, char** text)
       return msg->length;
    }
 
-   length = pgprtdbg_read_int32(msg->data);
    request = pgprtdbg_read_int32(msg->data + 4);
    
-   ZF_LOGV("FE: 0 Length: %d Request: %d", length, request);
+   pgprtdbg_log_line(shmem, "FE: 0");
+   pgprtdbg_log_line(shmem, "    Request: %d", request);
 
    if (request == 196608)
    {
@@ -473,7 +492,7 @@ fe_zero(int client_fd, struct message* msg, char** text)
          
       for (int i = 0; i < counter; i++)
       {
-         ZF_LOGV("FE: 0/Req Data: %s", array[i]);
+         pgprtdbg_log_line(shmem, "    Data: %s", array[i]);
       }
 
       for (int i = 0; i < counter; i++)
@@ -484,33 +503,27 @@ fe_zero(int client_fd, struct message* msg, char** text)
    }
    else if (request == 80877102)
    {
-      ZF_LOGD("CancelRequest");
-      ZF_LOGD("Pid: %d", pgprtdbg_read_int32(msg->data + 8));
-      ZF_LOGD("Secret: %d", pgprtdbg_read_int32(msg->data + 12));
+      pgprtdbg_log_line(shmem, "    PID: %d", pgprtdbg_read_int32(msg->data + 8));
+      pgprtdbg_log_line(shmem, "    Secret: %d", pgprtdbg_read_int32(msg->data + 12));
    }
    else if (request == 80877103)
    {
       /* SSL: Not supported */
-      ZF_LOGD("SSL");
       transport = SSL;
    }
    else if (request == 80877104)
    {
       /* GSS: Not supported */
-      ZF_LOGD("GSS");
    }
    else if (request == 131072)
    {
       /* Protocol v2: Not supported */
-      ZF_LOGD("protocol v2");
       pgprtdbg_write_connection_refused_old(client_fd);
       pgprtdbg_write_empty(client_fd);
       goto error;
    }
    else
    {
-      ZF_LOGE("Unknown request: %d\n", request);
-      ZF_LOGE_MEM(msg->data, msg->length, "Message %p:", (const void *)msg->data);
       exit(1);
    }
 
@@ -523,139 +536,149 @@ error:
 
 /* fe_B */
 static int
-fe_B(struct message* msg, char** text)
+fe_B(void* shmem, struct message* msg, const int offset, char** text)
 {
-   ZF_LOGV("FE: B");
+   int o;
+   int32_t length;
+   char* destination;
+   char* source;
+   int16_t codes;
+   int16_t values;
+   int16_t results;
 
-   return msg->length;
+   o = offset;
+
+   o += 1;
+   length = pgprtdbg_read_int32(msg->data + o);
+   o += 4;
+
+   destination = pgprtdbg_read_string(msg->data + o);
+   o += strlen(destination) + 1;
+
+   source = pgprtdbg_read_string(msg->data + o);
+   o += strlen(source) + 1;
+
+   codes = pgprtdbg_read_int16(msg->data + o);
+   o += 2;
+
+   for (int16_t i = 0; i < codes; i++)
+   {
+      pgprtdbg_read_int16(msg->data + o);
+      o += 2;
+   }
+
+   values = pgprtdbg_read_int16(msg->data + o);
+   o += 2;
+
+   for (int16_t i = 0; i < values; i++)
+   {
+      int32_t size;
+
+      size = pgprtdbg_read_int32(msg->data + o);
+      o += 4;
+
+      if (size != -1)
+      {
+         for (int32_t j = 0; j < size; j++)
+         {
+            pgprtdbg_read_byte(msg->data + o);
+            o += 1;
+         }
+      }
+   }
+
+   results = pgprtdbg_read_int16(msg->data + o);
+   o += 2;
+
+   for (int16_t i = 0; i < results; i++)
+   {
+      pgprtdbg_read_int16(msg->data + o);
+      o += 2;
+   }
+
+   pgprtdbg_log_line(shmem, "FE: B");
+   pgprtdbg_log_line(shmem, "    Destination: %s", destination);
+   pgprtdbg_log_line(shmem, "    Source: %s", source);
+   pgprtdbg_log_line(shmem, "    Codes: %d", codes);
+   pgprtdbg_log_line(shmem, "    Values: %d", values);
+   pgprtdbg_log_line(shmem, "    Results: %d", results);
+
+   return offset + length + 1;
 }
 
 /* fe_C */
 static int
-fe_C(struct message* msg, char** text)
+fe_C(void* shmem, struct message* msg, const int offset, char** text)
 {
-   ZF_LOGV("FE: C");
-
    return msg->length;
 }
 
 /* fe_D */
 static int
-fe_D(struct message* msg, char** text)
+fe_D(void* shmem, struct message* msg, const int offset, char** text)
 {
-   ZF_LOGV("FE: D");
+   int o;
+   int32_t length;
+   char type;
+   char* name;
 
-   return msg->length;
+   o = offset;
+   o += 1;
+
+   length = pgprtdbg_read_int32(msg->data + o);
+   o += 4;
+
+   type = pgprtdbg_read_byte(msg->data + o);
+   o += 1;
+
+   name = pgprtdbg_read_string(msg->data + o);
+   o += strlen(name) + 1;
+
+   pgprtdbg_log_line(shmem, "FE: D");
+   pgprtdbg_log_line(shmem, "    Type: %c", type);
+   pgprtdbg_log_line(shmem, "    Name: %s", name);
+
+   return offset + length + 1;
 }
 
 /* fe_E */
 static int
-fe_E(struct message* msg, char** text)
+fe_E(void* shmem, struct message* msg, const int offset, char** text)
 {
-   ZF_LOGV("FE: E");
+   int o;
+   int32_t length;
+   char* portal;
+   int32_t rows;
 
-   return msg->length;
+   o = offset;
+
+   o += 1;
+   length = pgprtdbg_read_int32(msg->data + o);
+   o += 4;
+
+   portal = pgprtdbg_read_string(msg->data + o);
+   o += strlen(portal) + 1;
+
+   rows = pgprtdbg_read_int32(msg->data + o);
+   o += 4;
+
+   pgprtdbg_log_line(shmem, "FE: E");
+   pgprtdbg_log_line(shmem, "    Portal: %s", portal);
+   pgprtdbg_log_line(shmem, "    MaxRows: %d", rows);
+
+   return offset + length + 1;
 }
 
 /* fe_F */
 static int
-fe_F(struct message* msg, char** text)
+fe_F(void* shmem, struct message* msg, const int offset, char** text)
 {
-   ZF_LOGV("FE: F");
-
    return msg->length;
 }
 
 /* fe_H */
 static int
-fe_H(struct message* msg, char** text)
-{
-   ZF_LOGV("FE: H");
-
-   return msg->length;
-}
-
-/* fe_P */
-static int
-fe_P(struct message* msg, char** text)
-{
-   ZF_LOGV("FE: P");
-
-   return msg->length;
-}
-
-/* fe_Q */
-static int
-fe_Q(struct message* msg, char** text)
-{
-   ZF_LOGV("FE: Q");
-   ZF_LOGV("Data: %s", (char*)(msg->data + 5));
-
-   return msg->length;
-}
-
-/* fe_S */
-static int
-fe_S(struct message* msg, char** text)
-{
-   ZF_LOGV("FE: S");
-
-   return msg->length;
-}
-
-/* fe_X */
-static int
-fe_X(struct message* msg, char** text)
-{
-   ZF_LOGV("FE: X");
-
-   return msg->length;
-}
-
-/* fe_c */
-static int
-fe_c(struct message* msg, char** text)
-{
-   ZF_LOGV("FE: c");
-
-   return msg->length;
-}
-
-/* fe_d */
-static int
-fe_d(struct message* msg, char** text)
-{
-   ZF_LOGV("FE: d");
-
-   return msg->length;
-}
-
-/* fe_f */
-static int
-fe_f(struct message* msg, char** text)
-{
-   ZF_LOGV("FE: f");
-
-   return msg->length;
-}
-
-/* fe_p */
-static int
-fe_p(struct message* msg, char** text)
-{
-   int32_t length;
-
-   length = pgprtdbg_read_int32(msg->data + 1);
-
-   ZF_LOGV("FE: p");
-   ZF_LOGV_MEM(msg->data + 5, length - 4, "Data: %p", (const void *)msg->data + 5);
-
-   return msg->length;
-}
-
-/* be_one */
-static int
-be_one(const struct message* msg, const int offset, char** text)
+fe_H(void* shmem, struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -665,14 +688,154 @@ be_one(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: 1");
+   pgprtdbg_log_line(shmem, "FE: H");
+
+   return offset + length + 1;
+}
+
+/* fe_P */
+static int
+fe_P(void* shmem, struct message* msg, const int offset, char** text)
+{
+   int o;
+   int32_t length;
+   char* destination;
+   char* query;
+   int16_t parameters;
+
+   o = offset;
+
+   o += 1;
+   length = pgprtdbg_read_int32(msg->data + o);
+   o += 4;
+
+   destination = pgprtdbg_read_string(msg->data + o);
+   o += strlen(destination) + 1;
+
+   query = pgprtdbg_read_string(msg->data + o);
+   o += strlen(query) + 1;
+
+   parameters = pgprtdbg_read_int16(msg->data + o);
+   o += 2;
+
+   pgprtdbg_log_line(shmem, "FE: P");
+   pgprtdbg_log_line(shmem, "    Destination: %s", destination);
+   pgprtdbg_log_line(shmem, "    Query: %s", query);
+   pgprtdbg_log_line(shmem, "    Parameters: %d", parameters);
+
+   for (int16_t i = 0; i < parameters; i++)
+   {
+      int32_t oid;
+
+      oid = pgprtdbg_read_int32(msg->data + o);
+      o += 4;
+
+      pgprtdbg_log_line(shmem, "    OID: %d", oid);
+   }
+
+   return offset + length + 1;
+}
+
+/* fe_Q */
+static int
+fe_Q(void* shmem, struct message* msg, const int offset, char** text)
+{
+   return msg->length;
+}
+
+/* fe_S */
+static int
+fe_S(void* shmem, struct message* msg, const int offset, char** text)
+{
+   int o;
+   int32_t length;
+
+   o = offset;
+   o += 1;
+   length = pgprtdbg_read_int32(msg->data + o);
+   o += 4;
+
+   pgprtdbg_log_line(shmem, "FE: S");
+
+   return offset + length + 1;
+}
+
+/* fe_X */
+static int
+fe_X(void* shmem, struct message* msg, const int offset, char** text)
+{
+   int o;
+   int32_t length;
+
+   o = offset;
+   o += 1;
+   length = pgprtdbg_read_int32(msg->data + o);
+   o += 4;
+
+   pgprtdbg_log_line(shmem, "FE: X");
+
+   return offset + length + 1;
+}
+
+/* fe_c */
+static int
+fe_c(void* shmem, struct message* msg, const int offset, char** text)
+{
+   return msg->length;
+}
+
+/* fe_d */
+static int
+fe_d(void* shmem, struct message* msg, const int offset, char** text)
+{
+   return msg->length;
+}
+
+/* fe_f */
+static int
+fe_f(void* shmem, struct message* msg, const int offset, char** text)
+{
+   return msg->length;
+}
+
+/* fe_p */
+static int
+fe_p(void* shmem, struct message* msg, const int offset, char** text)
+{
+   int o;
+   int32_t length;
+
+   o = offset;
+   o += 1;
+   length = pgprtdbg_read_int32(msg->data + o);
+   o += 4;
+
+   /* ZF_LOGV("FE: p"); */
+   /* ZF_LOGV_MEM(msg->data + 5, length - 4, "Data: %p", (const void *)msg->data + 5); */
+
+   return offset + length + 1;
+}
+
+/* be_one */
+static int
+be_one(void* shmem, const struct message* msg, const int offset, char** text)
+{
+   int o;
+   int32_t length;
+
+   o = offset;
+   o += 1;
+   length = pgprtdbg_read_int32(msg->data + o);
+   o += 4;
+
+   pgprtdbg_log_line(shmem, "BE: 1");
 
    return offset + length + 1;
 }
 
 /* be_two */
 static int
-be_two(const struct message* msg, const int offset, char** text)
+be_two(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -682,14 +845,14 @@ be_two(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: 2");
+   pgprtdbg_log_line(shmem, "BE: 2");
 
    return offset + length + 1;
 }
 
 /* be_three */
 static int
-be_three(const struct message* msg, const int offset, char** text)
+be_three(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -699,14 +862,14 @@ be_three(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: 3");
+   pgprtdbg_log_line(shmem, "BE: 3");
 
    return offset + length + 1;
 }
 
 /* be_A */
 static int
-be_A(const struct message* msg, const int offset, char** text)
+be_A(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -716,14 +879,14 @@ be_A(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: A");
+   /* ZF_LOGV("BE: A"); */
 
    return offset + length + 1;
 }
 
 /* be_C */
 static int
-be_C(const struct message* msg, const int offset, char** text)
+be_C(void* shmem, const struct message* msg, const int offset, char** text)
 {
    char* str = NULL;
    int o;
@@ -737,15 +900,15 @@ be_C(const struct message* msg, const int offset, char** text)
    str = pgprtdbg_read_string(msg->data + o);
    o += strlen(str) + 1;
    
-   ZF_LOGV("BE: C");
-   ZF_LOGV("Data: %s", str);
+   pgprtdbg_log_line(shmem, "BE: C");
+   pgprtdbg_log_line(shmem, "    Tag: %s", str);
 
    return offset + length + 1;
 }
 
 /* be_D */
 static int
-be_D(const struct message* msg, const int offset, const int from, const int to, char** text, struct message** new_msg, int* new_offset)
+be_D(void* shmem, const struct message* msg, const int offset, const int from, const int to, char** text, struct message** new_msg, int* new_offset)
 {
    int o;
    int32_t l;
@@ -767,20 +930,23 @@ be_D(const struct message* msg, const int offset, const int from, const int to, 
    number_of_columns = pgprtdbg_read_int16(m->data + o);
    o += 2;
 
-   ZF_LOGV("BE: D");
-   ZF_LOGV("Columns: %d", number_of_columns);
+   pgprtdbg_log_line(shmem, "BE: D");
+   pgprtdbg_log_line(shmem, "    Columns: %d", number_of_columns);
    for (int16_t i = 1; i <= number_of_columns; i++)
    {
       column_length = pgprtdbg_read_int32(m->data + o);
       o += 4;
 
+      pgprtdbg_log_line(shmem, "    Column: %d", i);
+      pgprtdbg_log_line(shmem, "    Length: %d", column_length);
+
       if (column_length != -1)
       {
          char buf[column_length];
 
-         memset(&buf, 0, column_length);
+         pgprtdbg_log_line(shmem, "    Data: XXXX");
 
-         ZF_LOGV("Column %d Length: %d", i, column_length);
+         memset(&buf, 0, column_length);
 
          for (int32_t j = 0; j < column_length; j++)
          {
@@ -796,14 +962,12 @@ be_D(const struct message* msg, const int offset, const int from, const int to, 
                status = pgprtdbg_write_message(to, m);
                if (status != MESSAGE_STATUS_OK)
                {
-                  ZF_LOGE("Write error to %d (%d)", to, status);
                   return -1;
                }
 
                status = pgprtdbg_read_message(from, new_msg);
                if (status != MESSAGE_STATUS_OK)
                {
-                  ZF_LOGE("Read error from %d (%d)", from, status);
                   return -1;
                }
 
@@ -811,16 +975,12 @@ be_D(const struct message* msg, const int offset, const int from, const int to, 
                o = 0;
                j--;
 
-               ZF_LOGV(".............");
             }
          }
-
-         /* ZF_LOGV_MEM(&buf[0], column_length, "Column %d Data  : %p", i, (const void *)&buf[0]); */
       }
       else
       {
-         ZF_LOGV("Column %d Length: -1", i);
-         ZF_LOGV("Column %d Data  : NULL", i);
+         pgprtdbg_log_line(shmem, "    Data: NULL");
       }
    }
 
@@ -831,7 +991,7 @@ be_D(const struct message* msg, const int offset, const int from, const int to, 
 
 /* be_E */
 static int
-be_E(const struct message* msg, const int offset, char** text)
+be_E(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -843,13 +1003,15 @@ be_E(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: E");
+   pgprtdbg_log_line(shmem, "BE: E");
+
    while (o < length - 4)
    {
       type = pgprtdbg_read_byte(msg->data + o);
       str = pgprtdbg_read_string(msg->data + o + 1);
 
-      ZF_LOGV("Data: %c %s", type, str);
+      pgprtdbg_log_line(shmem, "    Code: %c", type);
+      pgprtdbg_log_line(shmem, "    Value: %s", str);
 
       o += (strlen(str) + 2);
    }
@@ -859,7 +1021,7 @@ be_E(const struct message* msg, const int offset, char** text)
 
 /* be_G */
 static int
-be_G(const struct message* msg, const int offset, char** text)
+be_G(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -869,14 +1031,14 @@ be_G(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: G");
+   /* ZF_LOGV("BE: G"); */
 
    return offset + length + 1;
 }
 
 /* be_H */
 static int
-be_H(const struct message* msg, const int offset, char** text)
+be_H(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -886,14 +1048,14 @@ be_H(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: H");
+   /* ZF_LOGV("BE: H"); */
 
    return offset + length + 1;
 }
 
 /* be_I */
 static int
-be_I(const struct message* msg, const int offset, char** text)
+be_I(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -903,14 +1065,14 @@ be_I(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: I");
+   /* ZF_LOGV("BE: I"); */
 
    return offset + length + 1;
 }
 
 /* be_K */
 static int
-be_K(const struct message* msg, const int offset, char** text)
+be_K(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -928,16 +1090,16 @@ be_K(const struct message* msg, const int offset, char** text)
    secret = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: K");
-   ZF_LOGV("Process: %d", process);
-   ZF_LOGV("Secret : %d", secret);
+   pgprtdbg_log_line(shmem, "BE: K");
+   pgprtdbg_log_line(shmem, "    Process: %d", process);
+   pgprtdbg_log_line(shmem, "    Secret: %d", secret);
 
    return offset + length + 1;
 }
 
 /* be_N */
 static int
-be_N(const struct message* msg, const int offset, char** text)
+be_N(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -947,14 +1109,14 @@ be_N(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: N");
+   pgprtdbg_log_line(shmem, "BE: N");
 
    return offset + length + 1;
 }
 
 /* be_R */
 static int
-be_R(const struct message* msg, const int offset, char** text)
+be_R(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -967,56 +1129,58 @@ be_R(const struct message* msg, const int offset, char** text)
    type = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
+   pgprtdbg_log_line(shmem, "BE: R");
+
    switch (type)
    {
       case 0:
-         ZF_LOGV("BE: R - Success");
+         pgprtdbg_log_line(shmem, "    Success");
          break;
       case 2:
-         ZF_LOGV("BE: R - KerberosV5");
+         pgprtdbg_log_line(shmem, "    KerberosV5");
          break;
       case 3:
-         ZF_LOGV("BE: R - CleartextPassword");
+         pgprtdbg_log_line(shmem, "    CleartextPassword");
          break;
       case 5:
-         ZF_LOGV("BE: R - MD5Password");
-         ZF_LOGV("             Salt %02hhx%02hhx%02hhx%02hhx",
-                 (signed char)(pgprtdbg_read_byte(msg->data + o) & 0xFF),
-                 (signed char)(pgprtdbg_read_byte(msg->data + o + 1) & 0xFF),
-                 (signed char)(pgprtdbg_read_byte(msg->data + o + 2) & 0xFF),
-                 (signed char)(pgprtdbg_read_byte(msg->data + o + 3) & 0xFF));
+         /* ZF_LOGV("BE: R - MD5Password"); */
+         /* ZF_LOGV("             Salt %02hhx%02hhx%02hhx%02hhx", */
+         /*         (signed char)(pgprtdbg_read_byte(msg->data + o) & 0xFF), */
+         /*         (signed char)(pgprtdbg_read_byte(msg->data + o + 1) & 0xFF), */
+         /*         (signed char)(pgprtdbg_read_byte(msg->data + o + 2) & 0xFF), */
+         /*         (signed char)(pgprtdbg_read_byte(msg->data + o + 3) & 0xFF)); */
          o += 4;
          break;
       case 6:
-         ZF_LOGV("BE: R - SCMCredential");
+         pgprtdbg_log_line(shmem, "    SCMCredential");
          break;
       case 7:
-         ZF_LOGV("BE: R - GSS");
+         pgprtdbg_log_line(shmem, "    GSS");
          break;
       case 8:
-         ZF_LOGV("BE: R - GSSContinue");
+         pgprtdbg_log_line(shmem, "    GSSContinue");
          break;
       case 9:
-         ZF_LOGV("BE: R - SSPI");
+         pgprtdbg_log_line(shmem, "    SSPI");
          break;
       case 10:
-         ZF_LOGV("BE: R - SASL");
+         pgprtdbg_log_line(shmem, "    SASL");
          while (o < length - 8)
          {
             char* mechanism = pgprtdbg_read_string(msg->data + o);
-            ZF_LOGV("             %s", mechanism);
+            pgprtdbg_log_line(shmem, "    %s", mechanism);
             o += strlen(mechanism) + 1;
          }
          o += 1;
          break;
       case 11:
-         ZF_LOGV("BE: R - SASLContinue");
-         ZF_LOGV_MEM(msg->data + o, length - 8, "Message %p:", (const void *)msg->data + o);
+         pgprtdbg_log_line(shmem, "    SASLContinue");
+         /* ZF_LOGV_MEM(msg->data + o, length - 8, "Message %p:", (const void *)msg->data + o); */
          o += length - 8;
          break;
       case 12:
-         ZF_LOGV("BE: R - SASLFinal");
-         ZF_LOGV_MEM(msg->data + o, length - 8, "Message %p:", (const void *)msg->data + o);
+         pgprtdbg_log_line(shmem, "    SASLFinal");
+         /* ZF_LOGV_MEM(msg->data + o, length - 8, "Message %p:", (const void *)msg->data + o); */
          o += length - 8;
          break;
       default:
@@ -1028,7 +1192,7 @@ be_R(const struct message* msg, const int offset, char** text)
 
 /* be_S */
 static int
-be_S(const struct message* msg, const int offset, char** text)
+be_S(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -1046,16 +1210,16 @@ be_S(const struct message* msg, const int offset, char** text)
    value = pgprtdbg_read_string(msg->data + o);
    o += strlen(value) + 1;
 
-   ZF_LOGV("BE: S");
-   ZF_LOGV("Name : %s", name);
-   ZF_LOGV("Value: %s", value);
+   pgprtdbg_log_line(shmem, "BE: S");
+   pgprtdbg_log_line(shmem, "    Name: %s", name);
+   pgprtdbg_log_line(shmem, "    Value: %s", value);
 
    return offset + length + 1;
 }
 
 /* be_T */
 static int
-be_T(const struct message* msg, const int offset, char** text)
+be_T(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -1076,8 +1240,8 @@ be_T(const struct message* msg, const int offset, char** text)
    number_of_fields = pgprtdbg_read_int16(msg->data + o);
    o += 2;
 
-   ZF_LOGV("BE: T");
-   ZF_LOGV("Number       : %d", number_of_fields);
+   pgprtdbg_log_line(shmem, "BE: T");
+   pgprtdbg_log_line(shmem, "    Number: %d", number_of_fields);
    for (int16_t i = 0; i < number_of_fields; i++)
    {
       field_name = pgprtdbg_read_string(msg->data + o);
@@ -1101,13 +1265,13 @@ be_T(const struct message* msg, const int offset, char** text)
       format = pgprtdbg_read_int16(msg->data + o);
       o += 2;
 
-      ZF_LOGV("Name         : %s", field_name);
-      ZF_LOGV("OID          : %d", oid);
-      ZF_LOGV("Attribute    : %d", attr);
-      ZF_LOGV("Type OID     : %d", type_oid);
-      ZF_LOGV("Type length  : %d", type_length);
-      ZF_LOGV("Type modifier: %d", type_modifier);
-      ZF_LOGV("Format       : %d", format);
+      pgprtdbg_log_line(shmem, "    Name: %s", field_name);
+      pgprtdbg_log_line(shmem, "    OID: %d", oid);
+      pgprtdbg_log_line(shmem, "    Attribute: %d", attr);
+      pgprtdbg_log_line(shmem, "    Type OID: %d", type_oid);
+      pgprtdbg_log_line(shmem, "    Type length: %d", type_length);
+      pgprtdbg_log_line(shmem, "    Type modifier: %d", type_modifier);
+      pgprtdbg_log_line(shmem, "    Format: %d", format);
    }
 
    return offset + length + 1;
@@ -1115,7 +1279,7 @@ be_T(const struct message* msg, const int offset, char** text)
 
 /* be_V */
 static int
-be_V(const struct message* msg, const int offset, char** text)
+be_V(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -1125,14 +1289,14 @@ be_V(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: V");
+   /* ZF_LOGV("BE: V"); */
 
    return offset + length + 1;
 }
 
 /* be_W */
 static int
-be_W(const struct message* msg, const int offset, char** text)
+be_W(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -1142,14 +1306,14 @@ be_W(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: W");
+   /* ZF_LOGV("BE: W"); */
 
    return offset + length + 1;
 }
 
 /* be_Z */
 static int
-be_Z(const struct message* msg, const int offset, char** text)
+be_Z(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -1165,15 +1329,15 @@ be_Z(const struct message* msg, const int offset, char** text)
    buf[0] = pgprtdbg_read_byte(msg->data + o);
    o += 1;
    
-   ZF_LOGV("BE: Z");
-   ZF_LOGV("Data: %s", buf);
+   pgprtdbg_log_line(shmem, "BE: Z");
+   pgprtdbg_log_line(shmem, "    State: %s", buf);
 
    return offset + length + 1;
 }
 
 /* be_n */
 static int
-be_n(const struct message* msg, const int offset, char** text)
+be_n(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -1183,14 +1347,14 @@ be_n(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: n");
+   pgprtdbg_log_line(shmem, "BE: n");
 
    return offset + length + 1;
 }
 
 /* be_s */
 static int
-be_s(const struct message* msg, const int offset, char** text)
+be_s(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -1200,14 +1364,14 @@ be_s(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: s");
+   /* ZF_LOGV("BE: s"); */
 
    return offset + length + 1;
 }
 
 /* be_t */
 static int
-be_t(const struct message* msg, const int offset, char** text)
+be_t(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -1217,14 +1381,14 @@ be_t(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: t");
+   /* ZF_LOGV("BE: t"); */
 
    return offset + length + 1;
 }
 
 /* be_v */
 static int
-be_v(const struct message* msg, const int offset, char** text)
+be_v(void* shmem, const struct message* msg, const int offset, char** text)
 {
    int o;
    int32_t length;
@@ -1234,7 +1398,7 @@ be_v(const struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   ZF_LOGV("BE: v");
+   /* ZF_LOGV("BE: v"); */
 
    return offset + length + 1;
 }
