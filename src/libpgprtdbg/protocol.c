@@ -115,7 +115,6 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
                offset = fe_B(shmem, msg, offset, &text);
                break;
             case 'C':
-               pgprtdbg_log_line(shmem, "TODO: %c", kind);
                offset = fe_C(shmem, msg, offset, &text);
                break;
             case 'D':
@@ -135,7 +134,6 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
                offset = fe_P(shmem, msg, offset, &text);
                break;
             case 'Q':
-               pgprtdbg_log_line(shmem, "TODO: %c", kind);
                offset = fe_Q(shmem, msg, offset, &text);
                break;
             case 'S':
@@ -157,7 +155,6 @@ pgprtdbg_client(int from, int to, void* shmem, struct message* msg)
                offset = fe_f(shmem, msg, offset, &text);
                break;
             case 'p':
-               pgprtdbg_log_line(shmem, "TODO: %c", kind);
                offset = fe_p(shmem, msg, offset, &text);
                break;
             default:
@@ -610,7 +607,28 @@ fe_B(void* shmem, struct message* msg, const int offset, char** text)
 static int
 fe_C(void* shmem, struct message* msg, const int offset, char** text)
 {
-   return msg->length;
+   int o;
+   int32_t length;
+   char type;
+   char* portal;
+
+   o = offset;
+
+   o += 1;
+   length = pgprtdbg_read_int32(msg->data + o);
+   o += 4;
+
+   type = pgprtdbg_read_byte(msg->data + o);
+   o += 1;
+
+   portal = pgprtdbg_read_string(msg->data + o);
+   o += strlen(portal) + 1;
+
+   pgprtdbg_log_line(shmem, "FE: C");
+   pgprtdbg_log_line(shmem, "    Type: %c", type);
+   pgprtdbg_log_line(shmem, "    Portal: %s", portal);
+
+   return offset + length + 1;
 }
 
 /* fe_D */
@@ -740,7 +758,23 @@ fe_P(void* shmem, struct message* msg, const int offset, char** text)
 static int
 fe_Q(void* shmem, struct message* msg, const int offset, char** text)
 {
-   return msg->length;
+   int o;
+   int32_t length;
+   char* query;
+
+   o = offset;
+
+   o += 1;
+   length = pgprtdbg_read_int32(msg->data + o);
+   o += 4;
+
+   query = pgprtdbg_read_string(msg->data + o);
+   o += strlen(query) + 1;
+
+   pgprtdbg_log_line(shmem, "FE: Q");
+   pgprtdbg_log_line(shmem, "    Query: %s", query);
+
+   return offset + length + 1;
 }
 
 /* fe_S */
@@ -810,8 +844,8 @@ fe_p(void* shmem, struct message* msg, const int offset, char** text)
    length = pgprtdbg_read_int32(msg->data + o);
    o += 4;
 
-   /* ZF_LOGV("FE: p"); */
-   /* ZF_LOGV_MEM(msg->data + 5, length - 4, "Data: %p", (const void *)msg->data + 5); */
+   pgprtdbg_log_line(shmem, "FE: p");
+   pgprtdbg_log_mem(shmem, msg->data + o, length - 4);
 
    return offset + length + 1;
 }
