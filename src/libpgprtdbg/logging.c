@@ -170,7 +170,7 @@ pgprtdbg_log_line(void* shmem, char* fmt, ...)
 void
 pgprtdbg_log_mem(void* shmem, void* data, size_t size)
 {
-   char buf[8192];
+   char buf[256 * 1024];
    int j = 0;
    int k = 0;
    struct configuration* config;
