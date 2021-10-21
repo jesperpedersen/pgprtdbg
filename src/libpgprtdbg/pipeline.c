@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -53,7 +53,7 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
    status = pgprtdbg_read_message(wi->client_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
    {
-      pgprtdbg_client(wi->client_fd, wi->server_fd, wi->shmem, msg);
+      pgprtdbg_client(wi->client_fd, wi->server_fd, msg);
 
       status = pgprtdbg_write_message(wi->server_fd, msg);
       if (unlikely(status != MESSAGE_STATUS_OK))
@@ -81,15 +81,15 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
 client_error:
    if (errno != 0)
    {
-      pgprtdbg_log_lock(wi->shmem);
-      pgprtdbg_log_line(wi->shmem, "[C] client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
-      pgprtdbg_log_unlock(wi->shmem);
+      pgprtdbg_log_lock();
+      pgprtdbg_log_line("[C] client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
+      pgprtdbg_log_unlock();
    }
    else
    {
-      pgprtdbg_log_lock(wi->shmem);
-      pgprtdbg_log_line(wi->shmem, "[C] client_error: client_fd %d (%d)", wi->client_fd, status);
-      pgprtdbg_log_unlock(wi->shmem);
+      pgprtdbg_log_lock();
+      pgprtdbg_log_line("[C] client_error: client_fd %d (%d)", wi->client_fd, status);
+      pgprtdbg_log_unlock();
    }
 
    errno = 0;
@@ -101,15 +101,15 @@ client_error:
 server_error:
    if (errno != 0)
    {
-      pgprtdbg_log_lock(wi->shmem);
-      pgprtdbg_log_line(wi->shmem, "[C] server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
-      pgprtdbg_log_unlock(wi->shmem);
+      pgprtdbg_log_lock();
+      pgprtdbg_log_line("[C] server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
+      pgprtdbg_log_unlock();
    }
    else
    {
-      pgprtdbg_log_lock(wi->shmem);
-      pgprtdbg_log_line(wi->shmem, "[C] server_error: server_fd %d (%d)", wi->server_fd, status);
-      pgprtdbg_log_unlock(wi->shmem);
+      pgprtdbg_log_lock();
+      pgprtdbg_log_line("[C] server_error: server_fd %d (%d)", wi->server_fd, status);
+      pgprtdbg_log_unlock();
    }
 
    errno = 0;
@@ -132,7 +132,7 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
    status = pgprtdbg_read_message(wi->server_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
    {
-      pgprtdbg_server(wi->server_fd, wi->client_fd, wi->shmem, msg);
+      pgprtdbg_server(wi->server_fd, wi->client_fd, msg);
 
       status = pgprtdbg_write_message(wi->client_fd, msg);
       if (unlikely(status != MESSAGE_STATUS_OK))
@@ -173,15 +173,15 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
 client_error:
    if (errno != 0)
    {
-      pgprtdbg_log_lock(wi->shmem);
-      pgprtdbg_log_line(wi->shmem, "[S] client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
-      pgprtdbg_log_unlock(wi->shmem);
+      pgprtdbg_log_lock();
+      pgprtdbg_log_line("[S] client_error: client_fd %d - %s (%d)", wi->client_fd, strerror(errno), status);
+      pgprtdbg_log_unlock();
    }
    else
    {
-      pgprtdbg_log_lock(wi->shmem);
-      pgprtdbg_log_line(wi->shmem, "[S] client_error: client_fd %d (%d)", wi->client_fd, status);
-      pgprtdbg_log_unlock(wi->shmem);
+      pgprtdbg_log_lock();
+      pgprtdbg_log_line("[S] client_error: client_fd %d (%d)", wi->client_fd, status);
+      pgprtdbg_log_unlock();
    }
 
    errno = 0;
@@ -193,15 +193,15 @@ client_error:
 server_error:
    if (errno != 0)
    {
-      pgprtdbg_log_lock(wi->shmem);
-      pgprtdbg_log_line(wi->shmem, "[S] server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
-      pgprtdbg_log_unlock(wi->shmem);
+      pgprtdbg_log_lock();
+      pgprtdbg_log_line("[S] server_error: server_fd %d - %s (%d)", wi->server_fd, strerror(errno), status);
+      pgprtdbg_log_unlock();
    }
    else
    {
-      pgprtdbg_log_lock(wi->shmem);
-      pgprtdbg_log_line(wi->shmem, "[S] server_error: server_fd %d (%d)", wi->server_fd, status);
-      pgprtdbg_log_unlock(wi->shmem);
+      pgprtdbg_log_lock();
+      pgprtdbg_log_line("[S] server_error: server_fd %d (%d)", wi->server_fd, status);
+      pgprtdbg_log_unlock();
    }
 
    errno = 0;

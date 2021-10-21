@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -48,10 +48,10 @@ volatile int exit_code = WORKER_FAILURE;
 static void sigquit_cb(struct ev_loop *loop, ev_signal *w, int revents);
 
 void
-pgprtdbg_worker(int client_fd, void* shmem)
+pgprtdbg_worker(int client_fd)
 {
    struct ev_loop *loop = NULL;
-   struct signal_info signal_watcher;
+   struct ev_signal signal_watcher;
    struct worker_io client_io;
    struct worker_io server_io;
    struct configuration* config;
@@ -59,8 +59,8 @@ pgprtdbg_worker(int client_fd, void* shmem)
    int server_fd = -1;
    bool connected = false;
 
-   pgprtdbg_start_logging(shmem);
-   pgprtdbg_memory_init(shmem);
+   pgprtdbg_start_logging();
+   pgprtdbg_memory_init();
 
    config = (struct configuration*)shmem;
    pid = getpid();
@@ -77,8 +77,13 @@ pgprtdbg_worker(int client_fd, void* shmem)
       }
    }
 
+   pgprtdbg_log_lock();
+   pgprtdbg_log_line("--------");
+   pgprtdbg_log_line("Start client: %d", client_fd);
+   pgprtdbg_log_unlock();
+
    /* Connect */
-   if (!pgprtdbg_connect(shmem, config->server[0].host, config->server[0].port, &server_fd))
+   if (!pgprtdbg_connect(config->server[0].host, config->server[0].port, &server_fd))
    {
       atomic_fetch_add(&config->active_connections, 1);
       connected = true;
@@ -86,18 +91,15 @@ pgprtdbg_worker(int client_fd, void* shmem)
       ev_io_init((struct ev_io*)&client_io, pipeline_client, client_fd, EV_READ);
       client_io.client_fd = client_fd;
       client_io.server_fd = server_fd;
-      client_io.shmem = shmem;
       
       ev_io_init((struct ev_io*)&server_io, pipeline_server, server_fd, EV_READ);
       server_io.client_fd = client_fd;
       server_io.server_fd = server_fd;
-      server_io.shmem = shmem;
       
-      loop = ev_loop_new(pgprtdbg_libev(shmem, config->libev));
+      loop = ev_loop_new(pgprtdbg_libev(config->libev));
 
-      ev_signal_init((struct ev_signal*)&signal_watcher, sigquit_cb, SIGQUIT);
-      signal_watcher.shmem = shmem;
-      ev_signal_start(loop, (struct ev_signal*)&signal_watcher);
+      ev_signal_init(&signal_watcher, sigquit_cb, SIGQUIT);
+      ev_signal_start(loop, &signal_watcher);
 
       ev_io_start(loop, (struct ev_io*)&client_io);
       ev_io_start(loop, (struct ev_io*)&server_io);
@@ -108,6 +110,11 @@ pgprtdbg_worker(int client_fd, void* shmem)
       }
    }
 
+   pgprtdbg_log_lock();
+   pgprtdbg_log_line("--------");
+   pgprtdbg_log_line("Stop client: %d", client_fd);
+   pgprtdbg_log_unlock();
+
    pgprtdbg_disconnect(client_fd);
    pgprtdbg_disconnect(server_fd);
 
@@ -116,7 +123,7 @@ pgprtdbg_worker(int client_fd, void* shmem)
       ev_io_stop(loop, (struct ev_io*)&client_io);
       ev_io_stop(loop, (struct ev_io*)&server_io);
 
-      ev_signal_stop(loop, (struct ev_signal*)&signal_watcher);
+      ev_signal_stop(loop, &signal_watcher);
 
       ev_loop_destroy(loop);
    }
@@ -136,7 +143,7 @@ pgprtdbg_worker(int client_fd, void* shmem)
    }
 
    pgprtdbg_memory_destroy();
-   pgprtdbg_stop_logging(shmem);
+   pgprtdbg_stop_logging();
 
    exit(exit_code);
 }

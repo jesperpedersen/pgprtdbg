@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -111,19 +111,17 @@ pgprtdbg_write_string(void* data, char* s);
 
 /**
  * Print the available libev engines
- * @param shmem The shared memory segment
  */
 void
-pgprtdbg_libev_engines(void* shmem);
+pgprtdbg_libev_engines(void);
 
 /**
  * Get the constant for a libev engine
- * @param shmem The shared memory segment
  * @param engine The name of the engine
  * @return The constant
  */
 unsigned int
-pgprtdbg_libev(void* shmem, char* engine);
+pgprtdbg_libev(char* engine);
 
 /**
  * Get the name for a libev engine

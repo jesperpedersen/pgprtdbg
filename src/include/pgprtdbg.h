@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -58,6 +58,11 @@ extern "C" {
 #define likely(x)    __builtin_expect (!!(x), 1)
 #define unlikely(x)  __builtin_expect (!!(x), 0)
 
+/**
+ * The shared memory segment
+ */
+extern void* shmem;
+
 /** @struct
  * Defines a server
  */
@@ -81,6 +86,8 @@ struct configuration
    sem_t lock;               /**< The file lock */
 
    bool output_sockets;      /**< Output socket identifiers */
+
+   char unix_socket_dir[MISC_LENGTH]; /**< The directory for the Unix Domain Socket */
 
    int log_type;               /**< The logging type */
    char log_path[MISC_LENGTH]; /**< The logging path */
@@ -108,15 +115,6 @@ struct message
    size_t max_length; /**< The maximum size of the message */
    void* data;        /**< The message data */
 } __attribute__ ((aligned (64)));
-
-/** @struct
- * Defines the signal structure
- */
-struct signal_info
-{
-   struct ev_signal signal; /**< The libev base type */
-   void* shmem;             /**< The shared memory segment */
-};
 
 #ifdef __cplusplus
 }

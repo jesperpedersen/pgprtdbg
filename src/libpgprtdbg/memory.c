@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -41,7 +41,7 @@ static void* data = NULL;
  *
  */
 void
-pgprtdbg_memory_init(void* shmem)
+pgprtdbg_memory_init(void)
 {
    struct configuration* config;
 

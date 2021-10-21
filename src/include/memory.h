@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -39,10 +39,9 @@ extern "C" {
 
 /**
  * Initialize a memory segment for the process local message structure
- * @param shmem The shared memory segment
  */
 void
-pgprtdbg_memory_init(void* shmem);
+pgprtdbg_memory_init(void);
 
 /**
  * Get the message structure

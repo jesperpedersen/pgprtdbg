@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -31,20 +31,33 @@
 #include <shmem.h>
 
 /* system */
+#include <errno.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 
-void*
+void* shmem = NULL;
+
+int
 pgprtdbg_create_shared_memory(size_t size)
 {
    int protection = PROT_READ | PROT_WRITE;
    int visibility = MAP_ANONYMOUS | MAP_SHARED;
 
-   return mmap(NULL, size, protection, visibility, 0, 0);
+   shmem = mmap(NULL, size, protection, visibility, 0, 0);
+
+   if (shmem == (void *)-1)
+   {
+      errno = 0;
+      return 1;
+   }
+
+   memset(shmem, 0, size);
+
+   return 0;
 }
 
 int
-pgprtdbg_destroy_shared_memory(void* shmem, size_t size)
+pgprtdbg_destroy_shared_memory(size_t size)
 {
    return munmap(shmem, size);
 }

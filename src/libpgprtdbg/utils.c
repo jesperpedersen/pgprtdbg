@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -163,21 +163,21 @@ pgprtdbg_write_string(void* data, char* s)
 }
 
 void
-pgprtdbg_libev_engines(void* shmem)
+pgprtdbg_libev_engines(void)
 {
    unsigned int engines = ev_supported_backends();
 
    if (engines & EVBACKEND_SELECT)
    {
-      pgprtdbg_log_line(shmem, "libev available: select");
+      pgprtdbg_log_line("libev available: select");
    }
    if (engines & EVBACKEND_POLL)
    {
-      pgprtdbg_log_line(shmem, "libev available: poll");
+      pgprtdbg_log_line("libev available: poll");
    }
    if (engines & EVBACKEND_EPOLL)
    {
-      pgprtdbg_log_line(shmem, "libev available: epoll");
+      pgprtdbg_log_line("libev available: epoll");
    }
    if (engines & EVBACKEND_LINUXAIO)
    {
@@ -185,24 +185,24 @@ pgprtdbg_libev_engines(void* shmem)
    }
    if (engines & EVBACKEND_IOURING)
    {
-      pgprtdbg_log_line(shmem, "libev available: iouring");
+      pgprtdbg_log_line("libev available: iouring");
    }
    if (engines & EVBACKEND_KQUEUE)
    {
-      pgprtdbg_log_line(shmem, "libev available: kqueue");
+      pgprtdbg_log_line("libev available: kqueue");
    }
    if (engines & EVBACKEND_DEVPOLL)
    {
-      pgprtdbg_log_line(shmem, "libev available: devpoll");
+      pgprtdbg_log_line("libev available: devpoll");
    }
    if (engines & EVBACKEND_PORT)
    {
-      pgprtdbg_log_line(shmem, "libev available: port");
+      pgprtdbg_log_line("libev available: port");
    }
 }
 
 unsigned int
-pgprtdbg_libev(void* shmem, char* engine)
+pgprtdbg_libev(char* engine)
 {
    unsigned int engines = ev_supported_backends();
 
@@ -216,9 +216,9 @@ pgprtdbg_libev(void* shmem, char* engine)
          }
          else
          {
-            pgprtdbg_log_lock(shmem);
-            pgprtdbg_log_line(shmem, "libev not available: select");
-            pgprtdbg_log_unlock(shmem);
+            pgprtdbg_log_lock();
+            pgprtdbg_log_line("libev not available: select");
+            pgprtdbg_log_unlock();
          }
       }
       else if (!strcmp("poll", engine))
@@ -229,9 +229,9 @@ pgprtdbg_libev(void* shmem, char* engine)
          }
          else
          {
-            pgprtdbg_log_lock(shmem);
-            pgprtdbg_log_line(shmem, "libev not available: poll");
-            pgprtdbg_log_unlock(shmem);
+            pgprtdbg_log_lock();
+            pgprtdbg_log_line("libev not available: poll");
+            pgprtdbg_log_unlock();
          }
       }
       else if (!strcmp("epoll", engine))
@@ -242,9 +242,9 @@ pgprtdbg_libev(void* shmem, char* engine)
          }
          else
          {
-            pgprtdbg_log_lock(shmem);
-            pgprtdbg_log_line(shmem, "libev not available: epoll");
-            pgprtdbg_log_unlock(shmem);
+            pgprtdbg_log_lock();
+            pgprtdbg_log_line("libev not available: epoll");
+            pgprtdbg_log_unlock();
          }
       }
       else if (!strcmp("linuxaio", engine))
@@ -259,9 +259,9 @@ pgprtdbg_libev(void* shmem, char* engine)
          }
          else
          {
-            pgprtdbg_log_lock(shmem);
-            pgprtdbg_log_line(shmem, "libev not available: iouring");
-            pgprtdbg_log_unlock(shmem);
+            pgprtdbg_log_lock();
+            pgprtdbg_log_line("libev not available: iouring");
+            pgprtdbg_log_unlock();
          }
       }
       else if (!strcmp("devpoll", engine))
@@ -272,9 +272,9 @@ pgprtdbg_libev(void* shmem, char* engine)
          }
          else
          {
-            pgprtdbg_log_lock(shmem);
-            pgprtdbg_log_line(shmem, "libev not available: devpoll");
-            pgprtdbg_log_unlock(shmem);
+            pgprtdbg_log_lock();
+            pgprtdbg_log_line("libev not available: devpoll");
+            pgprtdbg_log_unlock();
          }
       }
       else if (!strcmp("port", engine))
@@ -285,9 +285,9 @@ pgprtdbg_libev(void* shmem, char* engine)
          }
          else
          {
-            pgprtdbg_log_lock(shmem);
-            pgprtdbg_log_line(shmem, "libev not available: port");
-            pgprtdbg_log_unlock(shmem);
+            pgprtdbg_log_lock();
+            pgprtdbg_log_line("libev not available: port");
+            pgprtdbg_log_unlock();
          }
       }
       else if (!strcmp("auto", engine) || !strcmp("", engine))
@@ -296,9 +296,9 @@ pgprtdbg_libev(void* shmem, char* engine)
       }
       else
       {
-         pgprtdbg_log_lock(shmem);
-         pgprtdbg_log_line(shmem, "libev unknown option: %s", engine);
-         pgprtdbg_log_unlock(shmem);
+         pgprtdbg_log_lock();
+         pgprtdbg_log_line("libev unknown option: %s", engine);
+         pgprtdbg_log_unlock();
       }
    }
 

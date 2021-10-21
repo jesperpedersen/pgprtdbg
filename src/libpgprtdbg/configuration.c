@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -51,18 +51,17 @@ static int as_logging_type(char* str);
  *
  */
 int
-pgprtdbg_init_configuration(void* shmem, size_t size)
+pgprtdbg_init_configuration(void)
 {
    struct configuration* config;
 
    config = (struct configuration*)shmem;
-   memset(config, 0, size);
 
    config->output_sockets = false;
 
    config->buffer_size = DEFAULT_BUFFER_SIZE;
    config->keep_alive = true;
-   config->nodelay = true;
+   config->nodelay = false;
    config->backlog = -1;
 
    config->log_type = PGPRTDBG_LOGGING_TYPE_CONSOLE;
@@ -84,7 +83,7 @@ pgprtdbg_init_configuration(void* shmem, size_t size)
  *
  */
 int
-pgprtdbg_read_configuration(char* filename, void* shmem)
+pgprtdbg_read_configuration(char* filename)
 {
    FILE* file;
    char section[LINE_LENGTH];
@@ -218,6 +217,20 @@ pgprtdbg_read_configuration(char* filename, void* shmem)
                      unknown = true;
                   }
                }
+               else if (!strcmp(key, "unix_socket_dir"))
+               {
+                  if (!strcmp(section, "pgprtdbg"))
+                  {
+                     max = strlen(value);
+                     if (max > MISC_LENGTH - 1)
+                        max = MISC_LENGTH - 1;
+                     memcpy(config->unix_socket_dir, value, max);
+                  }
+                  else
+                  {
+                     unknown = true;
+                  }
+               }
                else if (!strcmp(key, "log_type"))
                {
                   if (!strcmp(section, "pgprtdbg"))
@@ -335,7 +348,7 @@ pgprtdbg_read_configuration(char* filename, void* shmem)
  *
  */
 int
-pgprtdbg_validate_configuration(void* shmem)
+pgprtdbg_validate_configuration(void)
 {
    struct configuration* config;
 

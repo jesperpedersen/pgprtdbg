@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -50,7 +50,6 @@ struct worker_io
    struct ev_io io;      /**< The libev base type */
    int client_fd;        /**< The client descriptor */
    int server_fd;        /**< The server descriptor */
-   void* shmem;          /**< The shared memory segment */
 };
 
 extern volatile int running;
@@ -59,10 +58,9 @@ extern volatile int exit_code;
 /**
  * Create a worker instance
  * @param fd The client descriptor
- * @param shmem The shared memory segment
  */
 void
-pgprtdbg_worker(int fd, void* shmem);
+pgprtdbg_worker(int fd);
 
 #ifdef __cplusplus
 }

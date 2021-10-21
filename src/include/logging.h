@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -40,50 +40,44 @@ extern "C" {
 
 /**
  * Start the logging system
- * @param shmem The shared memory segment
  * @return 0 upon success, otherwise 1
  */
 int
-pgprtdbg_start_logging(void* shmem);
+pgprtdbg_start_logging(void);
 
 /**
  * Stop the logging system
- * @param shmem The shared memory segment
  * @return 0 upon success, otherwise 1
  */
 int
-pgprtdbg_stop_logging(void* shmem);
+pgprtdbg_stop_logging(void);
 
 /**
  * Lock the log
- * @param shmem The shared memory segment
  */
 void
-pgprtdbg_log_lock(void* shmem);
+pgprtdbg_log_lock(void);
 
 /**
  * Unlock the log
- * @param shmem The shared memory segment
  */
 void
-pgprtdbg_log_unlock(void* shmem);
+pgprtdbg_log_unlock(void);
 
 /**
  * Log a line
- * @param shmem The shared memory segment
  * @param fmt The string format
  */
 void
-pgprtdbg_log_line(void* shmem, char* fmt, ...);
+pgprtdbg_log_line(char* fmt, ...);
 
 /**
  * Log a data segment
- * @param shmem The shared memory segment
  * @param data The data
  * @param size The sie of the data
  */
 void
-pgprtdbg_log_mem(void* shmem, void* data, size_t size);
+pgprtdbg_log_mem(void* data, size_t size);
 
 #ifdef __cplusplus
 }

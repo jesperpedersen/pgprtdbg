@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -38,19 +38,18 @@ extern "C" {
 /**
  * Create a shared memory segment
  * @param size The size of the segment
- * @return The pointer to the segment
+ * @return The result
  */
-void*
+int
 pgprtdbg_create_shared_memory(size_t size);
 
 /**
  * Destroy a shared memory segment
- * @param shmem The shared memory segment
  * @param size The size
  * @return 0 upon success, otherwise 1
  */
 int
-pgprtdbg_destroy_shared_memory(void* shmem, size_t size);
+pgprtdbg_destroy_shared_memory(size_t size);
 
 #ifdef __cplusplus
 }

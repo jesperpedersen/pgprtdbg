@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -41,21 +41,19 @@ extern "C" {
  * Decode a message from the client
  * @param from The from socket
  * @param to The to socket
- * @param shmem The shared memory segment
  * @param msg The message
  */
 void
-pgprtdbg_client(int from, int to, void* shmem, struct message* msg);
+pgprtdbg_client(int from, int to, struct message* msg);
 
 /**
  * Decode a message from the server
  * @param from The from socket
  * @param to The to socket
- * @param shmem The shared memory segment
  * @param msg The message
  */
 void
-pgprtdbg_server(int from, int to, void* shmem, struct message* msg);
+pgprtdbg_server(int from, int to, struct message* msg);
 
 #ifdef __cplusplus
 }

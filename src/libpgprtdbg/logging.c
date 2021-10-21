@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -46,7 +46,7 @@ FILE *log_file = NULL;
  *
  */
 int
-pgprtdbg_start_logging(void* shmem)
+pgprtdbg_start_logging(void)
 {
    struct configuration* config;
 
@@ -78,7 +78,7 @@ pgprtdbg_start_logging(void* shmem)
  *
  */
 int
-pgprtdbg_stop_logging(void* shmem)
+pgprtdbg_stop_logging(void)
 {
    struct configuration* config;
 
@@ -93,7 +93,7 @@ pgprtdbg_stop_logging(void* shmem)
 }
 
 void
-pgprtdbg_log_lock(void* shmem)
+pgprtdbg_log_lock(void)
 {
    time_t start_time;
    signed char isfree;
@@ -132,7 +132,7 @@ timeout:
 }
 
 void
-pgprtdbg_log_unlock(void* shmem)
+pgprtdbg_log_unlock(void)
 {
    struct configuration* config;
 
@@ -142,7 +142,7 @@ pgprtdbg_log_unlock(void* shmem)
 }
 
 void
-pgprtdbg_log_line(void* shmem, char* fmt, ...)
+pgprtdbg_log_line(char* fmt, ...)
 {
    va_list vl;
    struct configuration* config;
@@ -168,7 +168,7 @@ pgprtdbg_log_line(void* shmem, char* fmt, ...)
 }
 
 void
-pgprtdbg_log_mem(void* shmem, void* data, size_t size)
+pgprtdbg_log_mem(void* data, size_t size)
 {
    char buf[256 * 1024];
    int j = 0;

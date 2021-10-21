@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -60,28 +60,70 @@ struct accept_io
 {
    struct ev_io io;
    int socket;
-   void* shmem;
 };
 
 struct periodic_info
 {
    struct ev_periodic periodic;
-   void* shmem;
 };
 
 static volatile int keep_running = 1;
+static struct ev_loop* main_loop = NULL;
 static struct accept_io io_main[MAX_FDS];
-static int length;
+static struct accept_io io_uds;
+static int unix_pgsql_socket = -1;
+static int* main_fds = NULL;
+static int main_fds_length;
 
 static void
-shutdown_io(struct ev_loop *loop)
+start_io(void)
 {
-   for (int i = 0; i < length; i++)
+   for (int i = 0; i < main_fds_length; i++)
    {
-      ev_io_stop(loop, (struct ev_io*)&io_main[i]);
-      pgprtdbg_shutdown(io_main[i].socket);
+      int sockfd = *(main_fds + i);
+
+      memset(&io_main[i], 0, sizeof(struct accept_io));
+      ev_io_init((struct ev_io*)&io_main[i], accept_cb, sockfd, EV_READ);
+      io_main[i].socket = sockfd;
+      ev_io_start(main_loop, (struct ev_io*)&io_main[i]);
+   }
+}
+
+static void
+shutdown_io(void)
+{
+   for (int i = 0; i < main_fds_length; i++)
+   {
+      ev_io_stop(main_loop, (struct ev_io*)&io_main[i]);
       pgprtdbg_disconnect(io_main[i].socket);
    }
+}
+
+static void
+start_uds(void)
+{
+   memset(&io_uds, 0, sizeof(struct accept_io));
+   ev_io_init((struct ev_io*)&io_uds, accept_cb, unix_pgsql_socket, EV_READ);
+   io_uds.socket = unix_pgsql_socket;
+   ev_io_start(main_loop, (struct ev_io*)&io_uds);
+}
+
+static void
+shutdown_uds(void)
+{
+   char pgsql[MISC_LENGTH];
+   struct configuration* config;
+
+   config = (struct configuration*)shmem;
+
+   memset(&pgsql, 0, sizeof(pgsql));
+   snprintf(&pgsql[0], sizeof(pgsql), ".s.PGSQL.%d", config->port);
+
+   ev_io_stop(main_loop, (struct ev_io*)&io_uds);
+   pgprtdbg_disconnect(unix_pgsql_socket);
+   errno = 0;
+   pgprtdbg_remove_unix_socket(config->unix_socket_dir, &pgsql[0]);
+   errno = 0;
 }
 
 static void
@@ -117,11 +159,9 @@ main(int argc, char **argv)
    char* configuration_path = NULL;
    bool daemon = false;
    pid_t pid, sid;
-   void* shmem = NULL;
-   struct ev_loop *loop;
-   struct signal_info signal_watcher[6];
-   int* fds = NULL;
+   struct ev_signal signal_watcher[6];
    size_t size;
+   char pgsql[MISC_LENGTH];
    struct configuration* config = NULL;
    int c;
 
@@ -168,12 +208,16 @@ main(int argc, char **argv)
    }
 
    size = sizeof(struct configuration);
-   shmem = pgprtdbg_create_shared_memory(size);
-   pgprtdbg_init_configuration(shmem, size);
+   if (pgprtdbg_create_shared_memory(size))
+   {
+      printf("pgagroal: Error in creating shared memory\n");
+      exit(1);
+   }
+   pgprtdbg_init_configuration();
 
    if (configuration_path != NULL)
    {
-      if (pgprtdbg_read_configuration(configuration_path, shmem))
+      if (pgprtdbg_read_configuration(configuration_path))
       {
          printf("pgprtdbg: Configuration not found: %s\n", configuration_path);
          exit(1);
@@ -181,7 +225,7 @@ main(int argc, char **argv)
    }
    else
    {
-      if (pgprtdbg_read_configuration("/etc/pgprtdbg.conf", shmem))
+      if (pgprtdbg_read_configuration("/etc/pgprtdbg.conf"))
       {
          printf("pgprtdbg: Configuration not found: /etc/pgprtdbg.conf\n");
          exit(1);
@@ -189,7 +233,7 @@ main(int argc, char **argv)
    }
 
 
-   if (pgprtdbg_validate_configuration(shmem))
+   if (pgprtdbg_validate_configuration())
    {
       exit(1);
    }
@@ -227,80 +271,95 @@ main(int argc, char **argv)
       }
    }
 
-   pgprtdbg_start_logging(shmem);
+   pgprtdbg_start_logging();
 
    /* Open file */
    config->file = fopen(config->output, "a+");
 
+   memset(&pgsql, 0, sizeof(pgsql));
+   snprintf(&pgsql[0], sizeof(pgsql), ".s.PGSQL.%d", config->port);
+
+   /* Bind Unix Domain Socket socket */
+   if (strlen(config->unix_socket_dir) > 0)
+   {
+      if (pgprtdbg_bind_unix_socket(config->unix_socket_dir, &pgsql[0], &unix_pgsql_socket))
+      {
+         printf("pgprtdbg: Could not bind to %s/%s\n", config->unix_socket_dir, &pgsql[0]);
+         exit(1);
+      }
+   }
+
    /* Bind main socket */
-   if (pgprtdbg_bind(config->host, config->port, shmem, &fds, &length))
+   if (pgprtdbg_bind(config->host, config->port, &main_fds, &main_fds_length))
    {
       printf("pgprtdbg: Could not bind to %s:%d\n", config->host, config->port);
       exit(1);
    }
    
-   if (length > MAX_FDS)
+   if (main_fds_length > MAX_FDS)
    {
-      printf("pgprtdbg: Too many descriptors %d\n", length);
+      printf("pgprtdbg: Too many descriptors %d\n", main_fds_length);
       exit(1);
    }
 
    /* libev */
-   loop = ev_default_loop(pgprtdbg_libev(shmem, config->libev));
-   if (!loop)
+   main_loop = ev_default_loop(pgprtdbg_libev(config->libev));
+   if (!main_loop)
    {
       printf("pgprtdbg: No loop implementation (%x) (%x)\n",
-             pgprtdbg_libev(shmem, config->libev), ev_supported_backends());
+             pgprtdbg_libev(config->libev), ev_supported_backends());
       exit(1);
    }
 
-   ev_signal_init((struct ev_signal*)&signal_watcher[0], shutdown_cb, SIGTERM);
-   ev_signal_init((struct ev_signal*)&signal_watcher[1], shutdown_cb, SIGHUP);
-   ev_signal_init((struct ev_signal*)&signal_watcher[2], shutdown_cb, SIGINT);
-   ev_signal_init((struct ev_signal*)&signal_watcher[3], shutdown_cb, SIGTRAP);
-   ev_signal_init((struct ev_signal*)&signal_watcher[4], coredump_cb, SIGABRT);
-   ev_signal_init((struct ev_signal*)&signal_watcher[5], shutdown_cb, SIGALRM);
+   ev_signal_init(&signal_watcher[0], shutdown_cb, SIGTERM);
+   ev_signal_init(&signal_watcher[1], shutdown_cb, SIGHUP);
+   ev_signal_init(&signal_watcher[2], shutdown_cb, SIGINT);
+   ev_signal_init(&signal_watcher[3], shutdown_cb, SIGTRAP);
+   ev_signal_init(&signal_watcher[4], coredump_cb, SIGABRT);
+   ev_signal_init(&signal_watcher[5], shutdown_cb, SIGALRM);
 
    for (int i = 0; i < 6; i++)
    {
-      signal_watcher[i].shmem = shmem;
-      ev_signal_start(loop, (struct ev_signal*)&signal_watcher[i]);
+      ev_signal_start(main_loop, &signal_watcher[i]);
    }
 
-   for (int i = 0; i < length; i++)
+   if (strlen(config->unix_socket_dir) > 0)
    {
-      int sockfd = *(fds + i);
-      ev_io_init((struct ev_io*)&io_main[i], accept_cb, sockfd, EV_READ);
-      io_main[i].socket = sockfd;
-      io_main[i].shmem = shmem;
-      ev_io_start(loop, (struct ev_io*)&io_main[i]);
+      start_uds();
    }
+   start_io();
 
-   pgprtdbg_log_lock(shmem);
-   pgprtdbg_log_line(shmem, "pgprtdbg: started on %s:%d", config->host, config->port);
-   for (int i = 0; i < length; i++)
+   pgprtdbg_log_lock();
+   pgprtdbg_log_line("--------");
+   pgprtdbg_log_line("Startup");
+   pgprtdbg_log_line("pgprtdbg: started on %s:%d", config->host, config->port);
+   for (int i = 0; i < main_fds_length; i++)
    {
-      pgprtdbg_log_line(shmem, "Socket %d", *(fds + i));
+      pgprtdbg_log_line("Socket %d", *(main_fds + i));
    }
-   pgprtdbg_libev_engines(shmem);
-   pgprtdbg_log_line(shmem, "libev engine: %s", pgprtdbg_libev_engine(ev_backend(loop)));
-   pgprtdbg_log_line(shmem, "Configuration size: %lu", size);
-   pgprtdbg_log_unlock(shmem);
+   pgprtdbg_libev_engines();
+   pgprtdbg_log_line("libev engine: %s", pgprtdbg_libev_engine(ev_backend(main_loop)));
+   pgprtdbg_log_line("Configuration size: %lu", size);
+   pgprtdbg_log_unlock();
 
    while (keep_running)
    {
-      ev_loop(loop, 0);
+      ev_loop(main_loop, 0);
    }
 
-   pgprtdbg_log_lock(shmem);
-   pgprtdbg_log_line(shmem, "pgprtdbg: shutdown");
-   pgprtdbg_log_unlock(shmem);
+   pgprtdbg_log_lock();
+   pgprtdbg_log_line("pgprtdbg: shutdown");
+   pgprtdbg_log_unlock();
 
-   shutdown_io(loop);
+   shutdown_io();
+   if (strlen(config->unix_socket_dir) > 0)
+   {
+      shutdown_uds();
+   }
 
    for (int i = 0; i < 6; i++)
    {
-      ev_signal_stop(loop, (struct ev_signal*)&signal_watcher[i]);
+      ev_signal_stop(main_loop, &signal_watcher[i]);
    }
 
    for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++)
@@ -311,16 +370,16 @@ main(int argc, char **argv)
       }
    }
 
-   ev_loop_destroy(loop);
+   ev_loop_destroy(main_loop);
 
-   free(fds);
+   free(main_fds);
 
    /* Close file */
    fflush(config->file);
    fclose(config->file);
 
-   pgprtdbg_stop_logging(shmem);
-   pgprtdbg_destroy_shared_memory(shmem, size);
+   pgprtdbg_stop_logging();
+   pgprtdbg_destroy_shared_memory(size);
 
    return 0;
 }
@@ -335,7 +394,7 @@ accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
    struct configuration* config;
 
    ai = (struct accept_io*)watcher;
-   config = (struct configuration*)ai->shmem;
+   config = (struct configuration*)shmem;
 
    if (EV_ERROR & revents)
    {
@@ -357,8 +416,9 @@ accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
    if (!fork())
    {
       ev_loop_fork(loop);
+      shutdown_io();
       pgprtdbg_disconnect(ai->socket);
-      pgprtdbg_worker(client_fd, ai->shmem);
+      pgprtdbg_worker(client_fd);
    }
 
    pgprtdbg_disconnect(client_fd);

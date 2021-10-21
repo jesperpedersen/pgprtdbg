@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -37,29 +37,25 @@ extern "C" {
 
 /**
  * Initialize the configuration structure
- * @param shmem The shared memory segment
- * @param size The size of the configuration
  * @return 0 upon success, otherwise 1
  */
 int
-pgprtdbg_init_configuration(void* shmem, size_t size);
+pgprtdbg_init_configuration(void);
 
 /**
  * Read the configuration from a file
  * @param filename The file name
- * @param shmem The shared memory segment
  * @return 0 upon success, otherwise 1
  */
 int
-pgprtdbg_read_configuration(char* filename, void* shmem);
+pgprtdbg_read_configuration(char* filename);
 
 /**
  * Validate the configuration
- * @param filename The file name
  * @return 0 upon success, otherwise 1
  */
 int
-pgprtdbg_validate_configuration(void* shmem);
+pgprtdbg_validate_configuration(void);
 
 #ifdef __cplusplus
 }

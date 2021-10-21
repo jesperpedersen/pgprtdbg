@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Red Hat
+ * Copyright (C) 2021 Red Hat
  * 
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
@@ -40,32 +40,22 @@ extern "C" {
  * Bind sockets for a host
  * @param hostname The host name
  * @param port The port number
- * @param shmem The shared memory segment
  * @param fds The resulting descriptors
  * @param length The resulting length of descriptors
  * @return 0 upon success, otherwise 1
  */
 int
-pgprtdbg_bind(const char* hostname, int port, void* shmem, int** fds, int* length);
+pgprtdbg_bind(const char* hostname, int port, int** fds, int* length);
 
 /**
  * Connect to a host
- * @param shmem The shared memory segment
  * @param hostname The host name
  * @param port The port number
  * @param fd The resulting descriptor
  * @return 0 upon success, otherwise 1
  */
 int
-pgprtdbg_connect(void* shmem, const char* hostname, int port, int* fd);
-
-/**
- * Shutdown a descriptor
- * @param fd The descriptor
- * @return 0 upon success, otherwise 1
- */
-int
-pgprtdbg_shutdown(int fd);
+pgprtdbg_connect(const char* hostname, int port, int* fd);
 
 /**
  * Disconnect from a descriptor
@@ -76,22 +66,39 @@ int
 pgprtdbg_disconnect(int fd);
 
 /**
- * Apply TCP/NODELAY to a descriptor
- * @param fd The descriptor
- * @param shmem The shared memory segment
+ * Bind a Unix Domain Socket
+ * @param directory The directory
+ * @param file The file
+ * @param fd The resulting descriptor
  * @return 0 upon success, otherwise 1
  */
 int
-pgprtdbg_tcp_nodelay(int fd, void* shmem);
+pgprtdbg_bind_unix_socket(const char* directory, const char* file, int* fd);
+
+/**
+ * Remove Unix Domain Socket directory
+ * @param directory The directory
+ * @param file The file
+ * @return 0 upon success, otherwise 1
+ */
+int
+pgprtdbg_remove_unix_socket(const char* directory, const char* file);
+
+/**
+ * Apply TCP/NODELAY to a descriptor
+ * @param fd The descriptor
+ * @return 0 upon success, otherwise 1
+ */
+int
+pgprtdbg_tcp_nodelay(int fd);
 
 /**
  * Set the configured socket buffer size to a descriptor
  * @param fd The descriptor
- * @param shmem The shared memory segment
  * @return 0 upon success, otherwise 1
  */
 int
-pgprtdbg_socket_buffers(int fd, void* shmem);
+pgprtdbg_socket_buffers(int fd);
 
 #ifdef __cplusplus
 }
