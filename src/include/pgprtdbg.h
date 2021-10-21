@@ -42,7 +42,7 @@ extern "C" {
 #include <time.h>
 #include <sys/types.h>
 
-#define VERSION "0.2.0"
+#define VERSION "0.2.1"
 
 #define MAX_BUFFER_SIZE      65535
 #define DEFAULT_BUFFER_SIZE  65535
