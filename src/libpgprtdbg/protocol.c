@@ -88,6 +88,9 @@ static int be_s(struct message* msg, int offset, char** text);
 static int be_t(struct message* msg, int offset, char** text);
 static int be_v(struct message* msg, int offset, char** text);
 
+static int process_remaining(struct message* msg, int offset, char** text);
+static int remaining = 0;
+
 void
 pgprtdbg_client(int from, int to, struct message* msg)
 {
@@ -97,13 +100,18 @@ pgprtdbg_client(int from, int to, struct message* msg)
 
    pgprtdbg_log_lock();
    pgprtdbg_log_line("--------");
-   pgprtdbg_log_line("Message:");
+   pgprtdbg_log_line("Message (%d):", msg->length);
    pgprtdbg_log_mem(msg->data, msg->length);
 
    offset = 0;
 
    if (transport == PLAIN)
    {
+      if (remaining > 0)
+      {
+         offset = process_remaining(msg, offset, &text);
+      }
+
       while (offset != -1 && offset < msg->length)
       {
          kind = pgprtdbg_read_byte(msg->data + offset);
@@ -218,7 +226,7 @@ pgprtdbg_server(int from, int to, struct message* msg)
 
    pgprtdbg_log_lock();
    pgprtdbg_log_line("--------");
-   pgprtdbg_log_line("Message:");
+   pgprtdbg_log_line("Message (%d):", msg->length);
    pgprtdbg_log_mem(msg->data, msg->length);
 
    offset = 0;
@@ -773,6 +781,8 @@ fe_Q(struct message* msg, int offset, char** text)
 
    pgprtdbg_log_line("FE: Q");
    pgprtdbg_log_line("    Query: %s", query);
+
+   remaining = length - msg->length + offset + 1;
 
    return offset + length + 1;
 }
@@ -1509,6 +1519,30 @@ be_v(struct message* msg, int offset, char** text)
    o += 4;
 
    pgprtdbg_log_line("BE: v");
+
+   return offset + length + 1;
+}
+
+static int
+process_remaining(struct message* msg, int offset, char** text)
+{
+   int r;
+   int o;
+   int32_t length;
+   char* query;
+
+   r = remaining;
+   o = offset;
+
+   length = MIN(r, msg->length);
+
+   query = pgprtdbg_read_string(msg->data + o);
+   o += strlen(query) + 1;
+
+   pgprtdbg_log_line("FE: Q/Continue");
+   pgprtdbg_log_line("    Query: %s", query);
+
+   remaining -= length;
 
    return offset + length + 1;
 }
