@@ -91,6 +91,7 @@ struct configuration
    sem_t lock;               /**< The file lock */
 
    bool output_sockets;      /**< Output socket identifiers */
+   bool save_traffic;        /**< Save the traffic in files */
 
    char unix_socket_dir[MISC_LENGTH]; /**< The directory for the Unix Domain Socket */
 

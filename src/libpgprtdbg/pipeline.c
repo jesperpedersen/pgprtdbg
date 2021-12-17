@@ -33,6 +33,7 @@
 #include <pipeline.h>
 #include <protocol.h>
 #include <worker.h>
+#include <utils.h>
 
 /* system */
 #include <errno.h>
@@ -40,6 +41,7 @@
 #include <stdlib.h>
 
 int transport = PLAIN;
+long identifier = 0;
 
 void
 pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
@@ -47,13 +49,21 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
    int status = MESSAGE_STATUS_ERROR;
    struct worker_io* wi = NULL;
    struct message* msg = NULL;
+   struct configuration* config = NULL;
 
    wi = (struct worker_io*)watcher;
+   config = (struct configuration*)shmem;
 
    status = pgprtdbg_read_message(wi->client_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
    {
       pgprtdbg_client(wi->client_fd, wi->server_fd, msg);
+
+      if (config->save_traffic)
+      {
+         identifier++;
+         pgprtdbg_save_client_traffic(getpid(), identifier, msg);
+      }
 
       status = pgprtdbg_write_message(wi->server_fd, msg);
       if (unlikely(status != MESSAGE_STATUS_OK))
@@ -126,13 +136,20 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
    bool fatal = false;
    struct worker_io* wi = NULL;
    struct message* msg = NULL;
+   struct configuration* config = NULL;
 
    wi = (struct worker_io*)watcher;
+   config = (struct configuration*)shmem;
 
    status = pgprtdbg_read_message(wi->server_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
    {
       pgprtdbg_server(wi->server_fd, wi->client_fd, msg);
+
+      if (config->save_traffic)
+      {
+         pgprtdbg_save_server_traffic(getpid(), identifier, msg);
+      }
 
       status = pgprtdbg_write_message(wi->client_fd, msg);
       if (unlikely(status != MESSAGE_STATUS_OK))

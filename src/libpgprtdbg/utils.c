@@ -49,6 +49,10 @@
 #define EVBACKEND_IOURING  0x00000080U
 #endif
 
+#define LINE_LENGTH 32
+
+static int write_traffic(char* filename, long identifier, struct message* msg);
+
 signed char
 pgprtdbg_read_byte(void* data)
 {
@@ -329,4 +333,90 @@ pgprtdbg_libev_engine(unsigned int val)
    }
 
    return "Unknown";
+}
+
+int
+pgprtdbg_save_client_traffic(pid_t pid, long identifier, struct message* msg)
+{
+   char filename[MISC_LENGTH];
+
+   memset(&filename, 0, sizeof(filename));
+   snprintf(&filename[0], sizeof(filename), "%d-client.bin", pid);
+
+   return write_traffic(&filename[0], identifier, msg);
+}
+
+int
+pgprtdbg_save_server_traffic(pid_t pid, long identifier, struct message* msg)
+{
+   char filename[MISC_LENGTH];
+
+   memset(&filename, 0, sizeof(filename));
+   snprintf(&filename[0], sizeof(filename), "%d-server.bin", pid);
+
+   return write_traffic(&filename[0], identifier, msg);
+}
+
+static int
+write_traffic(char* filename, long identifier, struct message* msg)
+{
+   FILE* file;
+   char header[MISC_LENGTH];
+   char buf[256 * 1024];
+   int j = 0;
+   int k = 0;
+
+   file = fopen(filename, "a");
+
+   memset(&header, 0, sizeof(header));
+   memset(&buf, 0, sizeof(buf));
+
+   for (int i = 0; i < msg->length; i++)
+   {
+      if (k == LINE_LENGTH)
+      {
+         buf[j] = '\n';
+         j++;
+         k = 0;
+      }
+      sprintf(&buf[j], "%02X", (signed char) *((char*)msg->data + i));
+      j += 2;
+      k++;
+   }
+
+   buf[j] = '\n';
+   j++;
+   k = 0;
+
+   for (int i = 0; i < msg->length; i++)
+   {
+      signed char c = (signed char) *((char*)msg->data + i);
+      if (k == LINE_LENGTH)
+      {
+         buf[j] = '\n';
+         j++;
+         k = 0;
+      }
+      if (c >= 32 && c <= 127)
+      {
+         buf[j] = c;
+      }
+      else
+      {
+         buf[j] = '?';
+      }
+      j++;
+      k++;
+   }
+
+   snprintf(&header[0], sizeof(header), "----- %ld -----", identifier);
+   fprintf(file, "%s", header);
+   fprintf(file, "\n");
+
+   fprintf(file, "%s", buf);
+   fprintf(file, "\n");
+   fflush(file);
+   fclose(file);
+
+   return 0;
 }

@@ -58,6 +58,7 @@ pgprtdbg_init_configuration(void)
    config = (struct configuration*)shmem;
 
    config->output_sockets = false;
+   config->save_traffic = false;
 
    config->buffer_size = DEFAULT_BUFFER_SIZE;
    config->keep_alive = true;
@@ -211,6 +212,17 @@ pgprtdbg_read_configuration(char* filename)
                   if (!strcmp(section, "pgprtdbg"))
                   {
                      config->output_sockets = as_bool(value);
+                  }
+                  else
+                  {
+                     unknown = true;
+                  }
+               }
+               else if (!strcmp(key, "save_traffic"))
+               {
+                  if (!strcmp(section, "pgprtdbg"))
+                  {
+                     config->save_traffic = as_bool(value);
                   }
                   else
                   {

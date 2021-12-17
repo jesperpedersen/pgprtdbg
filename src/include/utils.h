@@ -131,6 +131,26 @@ pgprtdbg_libev(char* engine);
 char*
 pgprtdbg_libev_engine(unsigned int val);
 
+/**
+ * Save client traffic in a file
+ * @param pid The PID
+ * @param identifier The number identifier for the message
+ * @param msg The message
+ * @return The name
+ */
+int
+pgprtdbg_save_client_traffic(pid_t pid, long identifier, struct message* msg);
+
+/**
+ * Save server traffic in a file
+ * @param pid The PID
+ * @param identifier The number identifier for the message
+ * @param msg The message
+ * @return The name
+ */
+int
+pgprtdbg_save_server_traffic(pid_t pid, long identifier, struct message* msg);
+
 #ifdef __cplusplus
 }
 #endif
