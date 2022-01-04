@@ -82,6 +82,11 @@ pgprtdbg_worker(int client_fd)
    pgprtdbg_log_line("Start client: %d", client_fd);
    pgprtdbg_log_unlock();
 
+   if (config->save_traffic)
+   {
+      pgprtdbg_save_begin_marker(getpid());
+   }
+
    /* Connect */
    if (!pgprtdbg_connect(config->server[0].host, config->server[0].port, &server_fd))
    {
@@ -114,6 +119,11 @@ pgprtdbg_worker(int client_fd)
    pgprtdbg_log_line("--------");
    pgprtdbg_log_line("Stop client: %d", client_fd);
    pgprtdbg_log_unlock();
+
+   if (config->save_traffic)
+   {
+      pgprtdbg_save_end_marker(getpid());
+   }
 
    pgprtdbg_disconnect(client_fd);
    pgprtdbg_disconnect(server_fd);

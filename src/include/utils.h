@@ -136,7 +136,7 @@ pgprtdbg_libev_engine(unsigned int val);
  * @param pid The PID
  * @param identifier The number identifier for the message
  * @param msg The message
- * @return The name
+ * @return The result
  */
 int
 pgprtdbg_save_client_traffic(pid_t pid, long identifier, struct message* msg);
@@ -146,10 +146,26 @@ pgprtdbg_save_client_traffic(pid_t pid, long identifier, struct message* msg);
  * @param pid The PID
  * @param identifier The number identifier for the message
  * @param msg The message
- * @return The name
+ * @return The result
  */
 int
 pgprtdbg_save_server_traffic(pid_t pid, long identifier, struct message* msg);
+
+/**
+ * Begin marker
+ * @param pid The PID
+ * @return The result
+ */
+int
+pgprtdbg_save_begin_marker(pid_t pid);
+
+/**
+ * End marker
+ * @param pid The PID
+ * @return The result
+ */
+int
+pgprtdbg_save_end_marker(pid_t pid);
 
 #ifdef __cplusplus
 }

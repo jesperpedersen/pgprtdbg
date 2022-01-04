@@ -365,56 +365,142 @@ write_traffic(char* filename, long identifier, struct message* msg)
    char buf[256 * 1024];
    int j = 0;
    int k = 0;
+   char tbuf[256];
+   struct tm* tm;
+   time_t t;
 
    file = fopen(filename, "a");
 
    memset(&header, 0, sizeof(header));
    memset(&buf, 0, sizeof(buf));
+   memset(&tbuf, 0, sizeof(tbuf));
 
-   for (int i = 0; i < msg->length; i++)
+   t = time(NULL);
+   tm = localtime(&t);
+
+   tbuf[strftime(tbuf, sizeof(tbuf), "%Y-%m-%d %H:%M:%S", tm)] = '\0';
+
+   if (msg != NULL)
    {
-      if (k == LINE_LENGTH)
+      for (int i = 0; i < msg->length; i++)
       {
-         buf[j] = '\n';
-         j++;
-         k = 0;
+         if (k == LINE_LENGTH)
+         {
+            buf[j] = '\n';
+            j++;
+            k = 0;
+         }
+         sprintf(&buf[j], "%02X", (signed char) *((char*)msg->data + i));
+         j += 2;
+         k++;
       }
-      sprintf(&buf[j], "%02X", (signed char) *((char*)msg->data + i));
-      j += 2;
-      k++;
-   }
 
-   buf[j] = '\n';
-   j++;
-   k = 0;
-
-   for (int i = 0; i < msg->length; i++)
-   {
-      signed char c = (signed char) *((char*)msg->data + i);
-      if (k == LINE_LENGTH)
-      {
-         buf[j] = '\n';
-         j++;
-         k = 0;
-      }
-      if (c >= 32 && c <= 127)
-      {
-         buf[j] = c;
-      }
-      else
-      {
-         buf[j] = '?';
-      }
+      buf[j] = '\n';
       j++;
-      k++;
+      k = 0;
+
+      for (int i = 0; i < msg->length; i++)
+      {
+         signed char c = (signed char) *((char*)msg->data + i);
+         if (k == LINE_LENGTH)
+         {
+            buf[j] = '\n';
+            j++;
+            k = 0;
+         }
+         if (c >= 32 && c <= 127)
+         {
+            buf[j] = c;
+         }
+         else
+         {
+            buf[j] = '?';
+         }
+         j++;
+         k++;
+      }
    }
 
    snprintf(&header[0], sizeof(header), "----- %ld -----", identifier);
    fprintf(file, "%s", header);
    fprintf(file, "\n");
 
+   snprintf(&header[0], sizeof(header), "===== %s =====", &tbuf[0]);
+   fprintf(file, "%s", header);
+   fprintf(file, "\n");
+
+   snprintf(&header[0], sizeof(header), "===== %ld =====", msg != NULL ? msg->length : 0);
+   fprintf(file, "%s", header);
+   fprintf(file, "\n");
+
    fprintf(file, "%s", buf);
    fprintf(file, "\n");
+   fflush(file);
+   fclose(file);
+
+   return 0;
+}
+
+int
+pgprtdbg_save_begin_marker(pid_t pid)
+{
+   char filename[MISC_LENGTH];
+   FILE* file;
+   char line[MISC_LENGTH];
+   char tbuf[256];
+   struct tm* tm;
+   time_t t;
+
+   memset(&filename, 0, sizeof(filename));
+   snprintf(&filename[0], sizeof(filename), "%d-client.bin", pid);
+
+   file = fopen(filename, "a");
+
+   memset(&line, 0, sizeof(line));
+   memset(&tbuf, 0, sizeof(tbuf));
+
+   t = time(NULL);
+   tm = localtime(&t);
+
+   tbuf[strftime(tbuf, sizeof(tbuf), "%Y-%m-%d %H:%M:%S", tm)] = '\0';
+
+   snprintf(&line[0], sizeof(line), "| BEGIN: %s -----", &tbuf[0]);
+   fprintf(file, "%s", line);
+   fprintf(file, "\n");
+
+   fflush(file);
+   fclose(file);
+
+   return 0;
+}
+
+int
+pgprtdbg_save_end_marker(pid_t pid)
+{
+   char filename[MISC_LENGTH];
+   FILE* file;
+   char line[MISC_LENGTH];
+   char tbuf[256];
+   struct tm* tm;
+   time_t t;
+
+   memset(&filename, 0, sizeof(filename));
+   snprintf(&filename[0], sizeof(filename), "%d-client.bin", pid);
+
+   file = fopen(filename, "a");
+
+   memset(&line, 0, sizeof(line));
+   memset(&tbuf, 0, sizeof(tbuf));
+
+   t = time(NULL);
+   tm = localtime(&t);
+
+   tbuf[strftime(tbuf, sizeof(tbuf), "%Y-%m-%d %H:%M:%S", tm)] = '\0';
+
+   snprintf(&line[0], sizeof(line), "| END: %s -----", &tbuf[0]);
+   fprintf(file, "%s", line);
+   fprintf(file, "\n");
+
    fflush(file);
    fclose(file);
 
