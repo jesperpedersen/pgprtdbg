@@ -68,7 +68,7 @@ static int be_two(struct message* msg, int offset, char** text);
 static int be_three(struct message* msg, int offset, char** text);
 static int be_A(struct message* msg, int offset, char** text);
 static int be_C(struct message* msg, int offset, char** text);
-static int be_D(struct message* msg, int offset, int from, int to, char** text, struct message** new_msg, int* new_offset);
+static int be_D(struct message* msg, int offset, char** text);
 static int be_E(struct message* msg, int offset, char** text);
 static int be_G(struct message* msg, int offset, char** text);
 static int be_H(struct message* msg, int offset, char** text);
@@ -88,15 +88,17 @@ static int be_s(struct message* msg, int offset, char** text);
 static int be_t(struct message* msg, int offset, char** text);
 static int be_v(struct message* msg, int offset, char** text);
 
-static int process_remaining(struct message* msg, int offset, char** text);
-static int remaining = 0;
+static signed char kind = 0;
+static int offset = 0;
+static int missing = 0;
+static size_t data_size = 0;
+static void* data = NULL;
 
 void
 pgprtdbg_client(int from, int to, struct message* msg)
 {
    char* text = NULL;
-   signed char kind;
-   int offset;
+   struct message* m;
 
    pgprtdbg_log_lock();
    pgprtdbg_log_line("--------");
@@ -104,90 +106,112 @@ pgprtdbg_client(int from, int to, struct message* msg)
    pgprtdbg_log_mem(msg->data, msg->length);
 
    offset = 0;
+   m = msg;
 
    if (transport == PLAIN)
    {
-      if (remaining > 0)
+      while (offset != -1 && offset < m->length)
       {
-         offset = process_remaining(msg, offset, &text);
-      }
-
-      while (offset != -1 && offset < msg->length)
-      {
-         kind = pgprtdbg_read_byte(msg->data + offset);
+         if (missing == 0)
+         {
+            kind = pgprtdbg_read_byte(m->data + offset);
+         }
 
          switch (kind)
          {
             case 0:
-               offset = fe_zero(msg, from, &text);
+               offset = fe_zero(m, from, &text);
                break;
             case 'B':
-               offset = fe_B(msg, offset, &text);
+               offset = fe_B(m, offset, &text);
                break;
             case 'C':
-               offset = fe_C(msg, offset, &text);
+               offset = fe_C(m, offset, &text);
                break;
             case 'D':
-               offset = fe_D(msg, offset, &text);
+               offset = fe_D(m, offset, &text);
                break;
             case 'E':
-               offset = fe_E(msg, offset, &text);
+               offset = fe_E(m, offset, &text);
                break;
             case 'F':
                pgprtdbg_log_line("TODO: %c", kind);
-               offset = fe_F(msg, offset, &text);
+               offset = fe_F(m, offset, &text);
                break;
             case 'H':
-               offset = fe_H(msg, offset, &text);
+               offset = fe_H(m, offset, &text);
                break;
             case 'P':
-               offset = fe_P(msg, offset, &text);
+               offset = fe_P(m, offset, &text);
                break;
             case 'Q':
-               offset = fe_Q(msg, offset, &text);
+               offset = fe_Q(m, offset, &text);
                break;
             case 'S':
-               offset = fe_S(msg, offset, &text);
+               offset = fe_S(m, offset, &text);
                break;
             case 'X':
-               offset = fe_X(msg, offset, &text);
+               offset = fe_X(m, offset, &text);
                break;
             case 'c':
-               offset = fe_c(msg, offset, &text);
+               offset = fe_c(m, offset, &text);
                break;
             case 'd':
-               offset = fe_d(msg, offset, &text);
+               offset = fe_d(m, offset, &text);
                break;
             case 'f':
-               offset = fe_f(msg, offset, &text);
+               offset = fe_f(m, offset, &text);
                break;
             case 'p':
-               offset = fe_p(msg, offset, &text);
+               offset = fe_p(m, offset, &text);
                break;
             default:
-               pgprtdbg_log_line("Unsupported client message: %d (%d)", kind, msg->kind);
-               offset = msg->length;
+               pgprtdbg_log_line("Unsupported client message: %d (%d)", kind, m->kind);
+               offset = m->length;
                break;
          }
 
          output_write("C", from, to, kind, text);
          free(text);
          text = NULL;
+
+         if (missing > 0)
+         {
+            int status;
+
+            status = pgprtdbg_write_message(to, m);
+            if (status != MESSAGE_STATUS_OK)
+            {
+               pgprtdbg_log_line("ERROR: Writing to %d gave %d", to, status);
+            }
+
+            status = pgprtdbg_read_message(from, &m);
+            if (status != MESSAGE_STATUS_OK)
+            {
+               pgprtdbg_log_line("ERROR: Reading from %d gave %d", from, status);
+            }
+
+            pgprtdbg_log_line("--------");
+            pgprtdbg_log_line("Message (%d):", m->length);
+            pgprtdbg_log_mem(m->data, m->length);
+
+            offset = 0;
+         }
       }
    }
    else
    {
-      while (offset != -1 && offset < msg->length)
+      while (offset != -1 && offset < m->length)
       {
-         kind = pgprtdbg_read_byte(msg->data + offset);
+         kind = pgprtdbg_read_byte(m->data + offset);
 
          switch (kind)
          {
             case 0:
-               offset = fe_zero(msg, from, &text);
+               offset = fe_zero(m, from, &text);
                break;
             default:
-               offset = msg->length;
+               offset = m->length;
                break;
          }
 
@@ -218,11 +242,7 @@ void
 pgprtdbg_server(int from, int to, struct message* msg)
 {
    char* text = NULL;
-   signed char kind;
-   int offset;
    struct message* m;
-   struct message* new_msg;
-   int new_offset;
 
    pgprtdbg_log_lock();
    pgprtdbg_log_line("--------");
@@ -231,14 +251,15 @@ pgprtdbg_server(int from, int to, struct message* msg)
 
    offset = 0;
    m = msg;
-   new_msg = NULL;
-   new_offset = 0;
 
    if (transport == PLAIN)
    {
       while (offset != -1 && offset < m->length)
       {
-         kind = pgprtdbg_read_byte(m->data + offset);
+         if (missing == 0)
+         {
+            kind = pgprtdbg_read_byte(m->data + offset);
+         }
 
          switch (kind)
          {
@@ -258,12 +279,7 @@ pgprtdbg_server(int from, int to, struct message* msg)
                offset = be_C(m, offset, &text);
                break;
             case 'D':
-               offset = be_D(m, offset, from, to, &text, &new_msg, &new_offset);
-               if (new_msg != NULL)
-               {
-                  m = new_msg;
-                  offset = new_offset;
-               }
+               offset = be_D(m, offset, &text);
                break;
             case 'E':
                offset = be_E(m, offset, &text);
@@ -332,6 +348,29 @@ pgprtdbg_server(int from, int to, struct message* msg)
          output_write("S", from, to, kind, text);
          free(text);
          text = NULL;
+
+         if (missing > 0)
+         {
+            int status;
+
+            status = pgprtdbg_write_message(to, m);
+            if (status != MESSAGE_STATUS_OK)
+            {
+               pgprtdbg_log_line("ERROR: Writing to %d gave %d", to, status);
+            }
+
+            status = pgprtdbg_read_message(from, &m);
+            if (status != MESSAGE_STATUS_OK)
+            {
+               pgprtdbg_log_line("ERROR: Reading from %d gave %d", from, status);
+            }
+
+            pgprtdbg_log_line("--------");
+            pgprtdbg_log_line("Message (%d):", m->length);
+            pgprtdbg_log_mem(m->data, m->length);
+
+            offset = 0;
+         }
       }
    }
    else
@@ -731,32 +770,94 @@ fe_P(struct message* msg, int offset, char** text)
 
    o = offset;
 
-   o += 1;
-   length = pgprtdbg_read_int32(msg->data + o);
-   o += 4;
-
-   destination = pgprtdbg_read_string(msg->data + o);
-   o += strlen(destination) + 1;
-
-   query = pgprtdbg_read_string(msg->data + o);
-   o += strlen(query) + 1;
-
-   parameters = pgprtdbg_read_int16(msg->data + o);
-   o += 2;
-
-   pgprtdbg_log_line("FE: P");
-   pgprtdbg_log_line("    Destination: %s", destination);
-   pgprtdbg_log_line("    Query: %s", query);
-   pgprtdbg_log_line("    Parameters: %d", parameters);
-
-   for (int16_t i = 0; i < parameters; i++)
+   if (missing == 0)
    {
-      int32_t oid;
-
-      oid = pgprtdbg_read_int32(msg->data + o);
+      o += 1;
+      length = pgprtdbg_read_int32(msg->data + o);
       o += 4;
 
-      pgprtdbg_log_line("    OID: %d", oid);
+      if (length > msg->length - offset)
+      {
+         data_size = msg->length - offset - 1;
+         data = malloc(data_size);
+
+         memset(data, 0, data_size);
+         memcpy(data, msg->data + offset + 1, data_size);
+
+         missing = length - data_size;
+
+         return offset + length + 1;
+      }
+
+      destination = pgprtdbg_read_string(msg->data + o);
+      o += strlen(destination) + 1;
+
+      query = pgprtdbg_read_string(msg->data + o);
+      o += strlen(query) + 1;
+
+      parameters = pgprtdbg_read_int16(msg->data + o);
+      o += 2;
+
+      pgprtdbg_log_line("FE: P");
+      pgprtdbg_log_line("    Destination: %s", destination);
+      pgprtdbg_log_line("    Query: %s", query);
+      pgprtdbg_log_line("    Parameters: %d", parameters);
+
+      for (int16_t i = 0; i < parameters; i++)
+      {
+         int32_t oid;
+
+         oid = pgprtdbg_read_int32(msg->data + o);
+         o += 4;
+
+         pgprtdbg_log_line("    OID: %d", oid);
+      }
+   }
+   else
+   {
+      int available = MIN(missing, msg->length);
+
+      data = realloc(data, data_size + available);
+      memcpy(data + data_size, msg->data + offset, available);
+      data_size += available;
+
+      missing -= available;
+
+      if (missing == 0)
+      {
+         o = 0;
+
+         length = available - 1;
+         o += 4;
+
+         destination = pgprtdbg_read_string(data + o);
+         o += strlen(destination) + 1;
+
+         query = pgprtdbg_read_string(data + o);
+         o += strlen(query) + 1;
+
+         parameters = pgprtdbg_read_int16(data + o);
+         o += 2;
+
+         pgprtdbg_log_line("FE: P");
+         pgprtdbg_log_line("    Destination: %s", destination);
+         pgprtdbg_log_line("    Query: %s", query);
+         pgprtdbg_log_line("    Parameters: %d", parameters);
+
+         for (int16_t i = 0; i < parameters; i++)
+         {
+            int32_t oid;
+
+            oid = pgprtdbg_read_int32(msg->data + o);
+            o += 4;
+
+            pgprtdbg_log_line("    OID: %d", oid);
+         }
+
+         free(data);
+         data = NULL;
+         data_size = 0;
+      }
    }
 
    return offset + length + 1;
@@ -772,17 +873,59 @@ fe_Q(struct message* msg, int offset, char** text)
 
    o = offset;
 
-   o += 1;
-   length = pgprtdbg_read_int32(msg->data + o);
-   o += 4;
+   if (missing == 0)
+   {
+      o += 1;
+      length = pgprtdbg_read_int32(msg->data + o);
+      o += 4;
 
-   query = pgprtdbg_read_string(msg->data + o);
-   o += strlen(query) + 1;
+      if (length > msg->length - offset)
+      {
+         data_size = msg->length - offset - 1;
+         data = malloc(data_size);
 
-   pgprtdbg_log_line("FE: Q");
-   pgprtdbg_log_line("    Query: %s", query);
+         memset(data, 0, data_size);
+         memcpy(data, msg->data + offset + 1, data_size);
 
-   remaining = length - msg->length + offset + 1;
+         missing = length - data_size;
+
+         return offset + length + 1;
+      }
+
+      query = pgprtdbg_read_string(msg->data + o);
+      o += strlen(query) + 1;
+
+      pgprtdbg_log_line("FE: Q");
+      pgprtdbg_log_line("    Query: %s", query);
+   }
+   else
+   {
+      int available = MIN(missing, msg->length);
+
+      data = realloc(data, data_size + available);
+      memcpy(data + data_size, msg->data + offset, available);
+      data_size += available;
+
+      missing -= available;
+
+      if (missing == 0)
+      {
+         o = 0;
+
+         length = available - 1;
+         o += 4;
+
+         query = pgprtdbg_read_string(data + o);
+         o += strlen(query) + 1;
+
+         pgprtdbg_log_line("FE: Q");
+         pgprtdbg_log_line("    Query: %s", query);
+
+         free(data);
+         data = NULL;
+         data_size = 0;
+      }
+   }
 
    return offset + length + 1;
 }
@@ -995,85 +1138,126 @@ be_C(struct message* msg, int offset, char** text)
 
 /* be_D */
 static int
-be_D(struct message* msg, int offset, int from, int to, char** text, struct message** new_msg, int* new_offset)
+be_D(struct message* msg, int offset, char** text)
 {
    int o;
-   int32_t l;
+   int32_t length;
    int16_t number_of_columns;
    int32_t column_length;
-   struct message* m;
 
    *text = NULL;
-   *new_msg = NULL;
-   *new_offset = 0;
-
-   m = (struct message*)msg;
 
    o = offset;
-   o += 1;
-   l = pgprtdbg_read_int32(m->data + o);
-   o += 4;
 
-   number_of_columns = pgprtdbg_read_int16(m->data + o);
-   o += 2;
-
-   pgprtdbg_log_line("BE: D");
-   pgprtdbg_log_line("    Columns: %d", number_of_columns);
-   for (int16_t i = 1; i <= number_of_columns; i++)
+   if (missing == 0)
    {
-      column_length = pgprtdbg_read_int32(m->data + o);
+      o += 1;
+      length = pgprtdbg_read_int32(msg->data + o);
       o += 4;
 
-      pgprtdbg_log_line("    Column: %d", i);
-      pgprtdbg_log_line("    Length: %d", column_length);
-
-      if (column_length != -1)
+      if (length > msg->length - offset)
       {
-         char buf[column_length];
+         data_size = msg->length - offset - 1;
+         data = malloc(data_size);
 
-         pgprtdbg_log_line("    Data: XXXX");
+         memset(data, 0, data_size);
+         memcpy(data, msg->data + offset + 1, data_size);
 
-         memset(&buf, 0, column_length);
+         missing = length - data_size;
 
-         for (int32_t j = 0; j < column_length; j++)
+         return offset + length + 1;
+      }
+
+      number_of_columns = pgprtdbg_read_int16(msg->data + o);
+      o += 2;
+
+      pgprtdbg_log_line("BE: D");
+      pgprtdbg_log_line("    Columns: %d", number_of_columns);
+      for (int16_t i = 1; i <= number_of_columns; i++)
+      {
+         column_length = pgprtdbg_read_int32(msg->data + o);
+         o += 4;
+
+         pgprtdbg_log_line("    Column: %d", i);
+         pgprtdbg_log_line("    Length: %d", column_length);
+
+         if (column_length != -1)
          {
-            if (o < m->length)
+            char buf[column_length];
+
+            pgprtdbg_log_line("    Data: XXXX");
+
+            memset(&buf, 0, column_length);
+
+            for (int32_t j = 0; j < column_length; j++)
             {
-               buf[j] = pgprtdbg_read_byte(m->data + o);
+               buf[j] = pgprtdbg_read_byte(msg->data + o);
                o += 1;
+            }
+         }
+         else
+         {
+            pgprtdbg_log_line("    Data: NULL");
+         }
+      }
+   }
+   else
+   {
+      int available = MIN(missing, msg->length);
+
+      data = realloc(data, data_size + available);
+      memcpy(data + data_size, msg->data + offset, available);
+      data_size += available;
+
+      missing -= available;
+
+      if (missing == 0)
+      {
+         o = 0;
+
+         length = available - 1;
+         o += 4;
+
+         number_of_columns = pgprtdbg_read_int16(data + o);
+         o += 2;
+
+         pgprtdbg_log_line("BE: D");
+         pgprtdbg_log_line("    Columns: %d", number_of_columns);
+         for (int16_t i = 1; i <= number_of_columns; i++)
+         {
+            column_length = pgprtdbg_read_int32(data + o);
+            o += 4;
+
+            pgprtdbg_log_line("    Column: %d", i);
+            pgprtdbg_log_line("    Length: %d", column_length);
+
+            if (column_length != -1)
+            {
+               char buf[column_length];
+
+               pgprtdbg_log_line("    Data: XXXX");
+
+               memset(&buf, 0, column_length);
+
+               for (int32_t j = 0; j < column_length; j++)
+               {
+                  buf[j] = pgprtdbg_read_byte(msg->data + o);
+                  o += 1;
+               }
             }
             else
             {
-               int status;
-
-               status = pgprtdbg_write_message(to, m);
-               if (status != MESSAGE_STATUS_OK)
-               {
-                  return -1;
-               }
-
-               status = pgprtdbg_read_message(from, new_msg);
-               if (status != MESSAGE_STATUS_OK)
-               {
-                  return -1;
-               }
-
-               m = *new_msg;
-               o = 0;
-               j--;
-
+               pgprtdbg_log_line("    Data: NULL");
             }
          }
-      }
-      else
-      {
-         pgprtdbg_log_line("    Data: NULL");
+
+         free(data);
+         data = NULL;
+         data_size = 0;
       }
    }
 
-   *new_offset = o;
-
-   return offset + l + 1;
+   return offset + length + 1;
 }
 
 /* be_E */
@@ -1519,30 +1703,6 @@ be_v(struct message* msg, int offset, char** text)
    o += 4;
 
    pgprtdbg_log_line("BE: v");
-
-   return offset + length + 1;
-}
-
-static int
-process_remaining(struct message* msg, int offset, char** text)
-{
-   int r;
-   int o;
-   int32_t length;
-   char* query;
-
-   r = remaining;
-   o = offset;
-
-   length = MIN(r, msg->length);
-
-   query = pgprtdbg_read_string(msg->data + o);
-   o += strlen(query) + 1;
-
-   pgprtdbg_log_line("FE: Q/Continue");
-   pgprtdbg_log_line("    Query: %s", query);
-
-   remaining -= length;
 
    return offset + length + 1;
 }
