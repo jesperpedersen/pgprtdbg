@@ -1,5 +1,5 @@
 Name:          pgprtdbg
-Version:       0.3.0
+Version:       0.3.1
 Release:       1%{dist}
 Summary:       Trace file for PostgreSQL protocol interaction
 License:       BSD
