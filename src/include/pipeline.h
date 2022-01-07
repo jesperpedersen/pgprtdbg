@@ -38,11 +38,6 @@ extern "C" {
 #include <ev.h>
 #include <stdlib.h>
 
-#define PLAIN 0
-#define SSL   1
-
-extern int transport;
-
 void
 pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents);
 

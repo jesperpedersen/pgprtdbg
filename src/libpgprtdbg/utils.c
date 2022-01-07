@@ -33,12 +33,14 @@
 
 /* system */
 #include <ev.h>
+#include <math.h>
 #include <pwd.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include <sys/types.h>
 
 #ifndef EVBACKEND_LINUXAIO
@@ -365,20 +367,25 @@ write_traffic(char* filename, long identifier, struct message* msg)
    char buf[256 * 1024];
    int j = 0;
    int k = 0;
+   char ymds[256];
    char tbuf[256];
-   struct tm* tm;
-   time_t t;
+   long ms;
+   struct tm gmtval;
+   struct timespec curtime;
 
    file = fopen(filename, "a");
 
    memset(&header, 0, sizeof(header));
    memset(&buf, 0, sizeof(buf));
+   memset(&ymds, 0, sizeof(ymds));
    memset(&tbuf, 0, sizeof(tbuf));
 
-   t = time(NULL);
-   tm = localtime(&t);
+   clock_gettime(CLOCK_REALTIME, &curtime);
+   ms = round(curtime.tv_nsec / 1.0e6);
+   gmtime_r(&curtime.tv_sec, &gmtval);
 
-   tbuf[strftime(tbuf, sizeof(tbuf), "%Y-%m-%d %H:%M:%S", tm)] = '\0';
+   strftime(&ymds[0], sizeof(ymds), "%Y-%m-%d %H:%M:%S", &gmtval);
+   snprintf(&tbuf[0], sizeof(tbuf), "%s,%03ld", &ymds[0], ms);
 
    if (msg != NULL)
    {
@@ -447,9 +454,11 @@ pgprtdbg_save_begin_marker(pid_t pid)
    char filename[MISC_LENGTH];
    FILE* file;
    char line[MISC_LENGTH];
+   char ymds[256];
    char tbuf[256];
-   struct tm* tm;
-   time_t t;
+   long ms;
+   struct tm gmtval;
+   struct timespec curtime;
 
    memset(&filename, 0, sizeof(filename));
    snprintf(&filename[0], sizeof(filename), "%d-client.bin", pid);
@@ -457,12 +466,15 @@ pgprtdbg_save_begin_marker(pid_t pid)
    file = fopen(filename, "a");
 
    memset(&line, 0, sizeof(line));
+   memset(&ymds, 0, sizeof(ymds));
    memset(&tbuf, 0, sizeof(tbuf));
 
-   t = time(NULL);
-   tm = localtime(&t);
+   clock_gettime(CLOCK_REALTIME, &curtime);
+   ms = round(curtime.tv_nsec / 1.0e6);
+   gmtime_r(&curtime.tv_sec, &gmtval);
 
-   tbuf[strftime(tbuf, sizeof(tbuf), "%Y-%m-%d %H:%M:%S", tm)] = '\0';
+   strftime(&ymds[0], sizeof(ymds), "%Y-%m-%d %H:%M:%S", &gmtval);
+   snprintf(&tbuf[0], sizeof(tbuf), "%s,%03ld", &ymds[0], ms);
 
    snprintf(&line[0], sizeof(line), "| BEGIN: %s -----", &tbuf[0]);
    fprintf(file, "%s", line);
@@ -480,9 +492,11 @@ pgprtdbg_save_end_marker(pid_t pid)
    char filename[MISC_LENGTH];
    FILE* file;
    char line[MISC_LENGTH];
+   char ymds[256];
    char tbuf[256];
-   struct tm* tm;
-   time_t t;
+   long ms;
+   struct tm gmtval;
+   struct timespec curtime;
 
    memset(&filename, 0, sizeof(filename));
    snprintf(&filename[0], sizeof(filename), "%d-client.bin", pid);
@@ -490,12 +504,15 @@ pgprtdbg_save_end_marker(pid_t pid)
    file = fopen(filename, "a");
 
    memset(&line, 0, sizeof(line));
+   memset(&ymds, 0, sizeof(ymds));
    memset(&tbuf, 0, sizeof(tbuf));
 
-   t = time(NULL);
-   tm = localtime(&t);
+   clock_gettime(CLOCK_REALTIME, &curtime);
+   ms = round(curtime.tv_nsec / 1.0e6);
+   gmtime_r(&curtime.tv_sec, &gmtval);
 
-   tbuf[strftime(tbuf, sizeof(tbuf), "%Y-%m-%d %H:%M:%S", tm)] = '\0';
+   strftime(&ymds[0], sizeof(ymds), "%Y-%m-%d %H:%M:%S", &gmtval);
+   snprintf(&tbuf[0], sizeof(tbuf), "%s,%03ld", &ymds[0], ms);
 
    snprintf(&line[0], sizeof(line), "| END: %s -----", &tbuf[0]);
    fprintf(file, "%s", line);
@@ -505,4 +522,56 @@ pgprtdbg_save_end_marker(pid_t pid)
    fclose(file);
 
    return 0;
+}
+
+void*
+pgprtdbg_data_append(void* data, size_t data_size, void* new_data, size_t new_data_size, size_t* new_size)
+{
+   if (data != NULL)
+   {
+      data = realloc(data, data_size + new_data_size);
+      memcpy(data + data_size, new_data, new_data_size);
+
+      *new_size = data_size + new_data_size;
+
+      return data;
+   }
+   else
+   {
+      void* result = NULL;
+
+      result = malloc(new_data_size);
+      memcpy(result, new_data, new_data_size);
+
+      *new_size = new_data_size;
+
+      return result;
+   }
+}
+
+void*
+pgprtdbg_data_remove(void* data, size_t data_size, size_t remove_size, size_t* new_size)
+{
+   if (data_size - remove_size == 0)
+   {
+      free(data);
+
+      *new_size = 0;
+
+      return NULL;
+   }
+   else
+   {
+      void* result = NULL;
+
+      *new_size = data_size - remove_size;
+
+      result = malloc(*new_size);
+      memset(result, 0, *new_size);
+      memcpy(result, data + remove_size, *new_size);
+
+      free(data);
+
+      return result;
+   }
 }

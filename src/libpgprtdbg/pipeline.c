@@ -41,7 +41,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int transport = PLAIN;
 long identifier = 0;
 
 void
@@ -72,14 +71,15 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
          goto server_error;
       }
 
-      if (transport == PLAIN)
+      if (msg->kind == 'X')
       {
-         if (msg->kind == 'X')
-         {
-            exit_code = WORKER_SUCCESS;
-            running = 0;
-         }
+         exit_code = WORKER_SUCCESS;
+         running = 0;
       }
+   }
+   else if (status == MESSAGE_STATUS_ZERO)
+   {
+      goto client_done;
    }
    else
    {
@@ -87,6 +87,17 @@ pipeline_client(struct ev_loop *loop, struct ev_io *watcher, int revents)
    }
 
    ev_break(loop, EVBREAK_ONE);
+   return;
+
+client_done:
+   pgprtdbg_log_lock();
+   pgprtdbg_log_line("[C] client_done: client_fd %d (%d)", wi->client_fd, status);
+   pgprtdbg_log_unlock();
+
+   errno = 0;
+   ev_break(loop, EVBREAK_ALL);
+   exit_code = WORKER_CLIENT_FAILURE;
+   running = 0;
    return;
 
 client_error:
@@ -158,27 +169,28 @@ pipeline_server(struct ev_loop *loop, struct ev_io *watcher, int revents)
          goto client_error;
       }
 
-      if (transport == PLAIN)
+      if (unlikely(msg->kind == 'E'))
       {
-         if (unlikely(msg->kind == 'E'))
+         fatal = false;
+
+         if (!strncmp(msg->data + 6, "FATAL", 5) || !strncmp(msg->data + 6, "PANIC", 5))
+            fatal = true;
+
+         if (!strncmp(msg->data + 20, "0A000", 5))
          {
             fatal = false;
+         }
 
-            if (!strncmp(msg->data + 6, "FATAL", 5) || !strncmp(msg->data + 6, "PANIC", 5))
-               fatal = true;
-
-            if (!strncmp(msg->data + 20, "0A000", 5))
-            {
-               fatal = false;
-            }
-
-            if (fatal)
-            {
-               exit_code = WORKER_SERVER_FATAL;
-               running = 0;
-            }
+         if (fatal)
+         {
+            exit_code = WORKER_SERVER_FATAL;
+            running = 0;
          }
       }
+   }
+   else if (status == MESSAGE_STATUS_ZERO)
+   {
+      goto server_done;
    }
    else
    {
@@ -205,6 +217,16 @@ client_error:
    errno = 0;
    ev_break(loop, EVBREAK_ALL);
    exit_code = WORKER_CLIENT_FAILURE;
+   running = 0;
+   return;
+
+server_done:
+   pgprtdbg_log_lock();
+   pgprtdbg_log_line("[C] server_done: server_fd %d (%d)", wi->server_fd, status);
+   pgprtdbg_log_unlock();
+
+   errno = 0;
+   ev_break(loop, EVBREAK_ALL);
    running = 0;
    return;
 

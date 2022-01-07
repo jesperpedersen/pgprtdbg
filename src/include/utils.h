@@ -167,6 +167,29 @@ pgprtdbg_save_begin_marker(pid_t pid);
 int
 pgprtdbg_save_end_marker(pid_t pid);
 
+/**
+ * Data: Append
+ * @param data The existing data
+ * @param data_size The existing data size
+ * @param new_data The new data
+ * @param new_data_size The new data size
+ * @param new_size The resulting size
+ * @return The result
+ */
+void*
+pgprtdbg_data_append(void* data, size_t data_size, void* new_data, size_t new_data_size, size_t* new_size);
+
+/**
+ * Data: Remove
+ * @param data The existing data
+ * @param data_size The existing data size
+ * @param remove_size Remove size
+ * @param new_size The resulting size
+ * @return The result
+ */
+void*
+pgprtdbg_data_remove(void* data, size_t data_size, size_t remove_size, size_t* new_size);
+
 #ifdef __cplusplus
 }
 #endif
