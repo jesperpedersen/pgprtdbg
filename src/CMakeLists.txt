@@ -20,6 +20,7 @@ include_directories(
 link_libraries(
   ${LIBEV_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}
+  ${EXTRA_LIBS}
 )
 
 #

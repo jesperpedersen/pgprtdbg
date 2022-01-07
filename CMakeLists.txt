@@ -34,6 +34,7 @@ message(STATUS "pgprtdbg ${VERSION_STRING}")
 
 include(CheckCCompilerFlag)
 include(CheckCSourceCompiles)
+include(CheckLibraryExists)
 include(FindPackageHandleStandardArgs)
 include(GNUInstallDirs)
 
@@ -58,11 +59,13 @@ endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-# if (THREADS_HAVE_PTHREAD_ARG)
-#   message(STATUS "pthreads found")
-# else ()
-#   message(FATAL_ERROR "pthreads needed")
-# endif()
+
+CHECK_LIBRARY_EXISTS(m round "" HAVE_LIB_M)
+if (HAVE_LIB_M)
+  set(EXTRA_LIBS ${EXTRA_LIBS} m)
+else ()
+  message(FATAL_ERROR "math needed")
+endif (HAVE_LIB_M)
 
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/")
 
