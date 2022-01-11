@@ -20,35 +20,35 @@ Trace file for PostgreSQL protocol interaction
 
 %build
 
-mkdir build
+%{__mkdir} build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
-make
+%{__make}
 
 %install
 
-mkdir -p %{buildroot}%{_sysconfdir}
-mkdir -p %{buildroot}%{_bindir}
-mkdir -p %{buildroot}%{_libdir}
-mkdir -p %{buildroot}%{_docdir}/%{name}
+%{__mkdir} -p %{buildroot}%{_sysconfdir}
+%{__mkdir} -p %{buildroot}%{_bindir}
+%{__mkdir} -p %{buildroot}%{_libdir}
+%{__mkdir} -p %{buildroot}%{_docdir}/%{name}
 
-/usr/bin/install -m 644 %{_builddir}/%{name}-%{version}/LICENSE %{buildroot}%{_docdir}/%{name}/LICENSE
-/usr/bin/install -m 644 %{_builddir}/%{name}-%{version}/README.md %{buildroot}%{_docdir}/%{name}/README.md
-/usr/bin/install -m 644 %{_builddir}/%{name}-%{version}/doc/CONFIGURATION.md %{buildroot}%{_docdir}/%{name}/CONFIGURATION.md
-/usr/bin/install -m 644 %{_builddir}/%{name}-%{version}/doc/GETTING_STARTED.md %{buildroot}%{_docdir}/%{name}/GETTING_STARTED.md
-/usr/bin/install -m 644 %{_builddir}/%{name}-%{version}/doc/RPM.md %{buildroot}%{_docdir}/%{name}/RPM.md
+%{__install} -m 644 %{_builddir}/%{name}-%{version}/LICENSE %{buildroot}%{_docdir}/%{name}/LICENSE
+%{__install} -m 644 %{_builddir}/%{name}-%{version}/README.md %{buildroot}%{_docdir}/%{name}/README.md
+%{__install} -m 644 %{_builddir}/%{name}-%{version}/doc/CONFIGURATION.md %{buildroot}%{_docdir}/%{name}/CONFIGURATION.md
+%{__install} -m 644 %{_builddir}/%{name}-%{version}/doc/GETTING_STARTED.md %{buildroot}%{_docdir}/%{name}/GETTING_STARTED.md
+%{__install} -m 644 %{_builddir}/%{name}-%{version}/doc/RPM.md %{buildroot}%{_docdir}/%{name}/RPM.md
 
-/usr/bin/install -m 644 %{_builddir}/%{name}-%{version}/doc/etc/pgprtdbg.conf %{buildroot}%{_sysconfdir}/pgprtdbg.conf
+%{__install} -m 644 %{_builddir}/%{name}-%{version}/doc/etc/pgprtdbg.conf %{buildroot}%{_sysconfdir}/pgprtdbg.conf
 
-/usr/bin/install -m 755 %{_builddir}/%{name}-%{version}/build/src/pgprtdbg %{buildroot}%{_bindir}/pgprtdbg
+%{__install} -m 755 %{_builddir}/%{name}-%{version}/build/src/pgprtdbg %{buildroot}%{_bindir}/pgprtdbg
 
-/usr/bin/install -m 755 %{_builddir}/%{name}-%{version}/build/src/libpgprtdbg.so.%{version} %{buildroot}%{_libdir}/libpgprtdbg.so.%{version}
+%{__install} -m 755 %{_builddir}/%{name}-%{version}/build/src/libpgprtdbg.so.%{version} %{buildroot}%{_libdir}/libpgprtdbg.so.%{version}
 
 chrpath -r %{_libdir} %{buildroot}%{_bindir}/pgprtdbg
 
 cd %{buildroot}%{_libdir}/
-ln -s -f libpgprtdbg.so.%{version} libpgprtdbg.so.0
-ln -s -f libpgprtdbg.so.0 libpgprtdbg.so
+%{__ln_s} libpgprtdbg.so.%{version} libpgprtdbg.so.0
+%{__ln_s} libpgprtdbg.so.0 libpgprtdbg.so
 
 %files
 %license %{_docdir}/%{name}/LICENSE
