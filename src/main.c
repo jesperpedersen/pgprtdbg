@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2022 Red Hat
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list
  * of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this
  * list of conditions and the following disclaimer in the documentation and/or other
  * materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the copyright holder nor the names of its contributors may
  * be used to endorse or promote products derived from this software without specific
  * prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -52,9 +52,9 @@
 
 #define MAX_FDS 64
 
-static void accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
-static void shutdown_cb(struct ev_loop *loop, ev_signal *w, int revents);
-static void coredump_cb(struct ev_loop *loop, ev_signal *w, int revents);
+static void accept_cb(struct ev_loop* loop, struct ev_io* watcher, int revents);
+static void shutdown_cb(struct ev_loop* loop, ev_signal* w, int revents);
+static void coredump_cb(struct ev_loop* loop, ev_signal* w, int revents);
 
 struct accept_io
 {
@@ -154,7 +154,7 @@ usage()
 }
 
 int
-main(int argc, char **argv)
+main(int argc, char** argv)
 {
    char* configuration_path = NULL;
    bool daemon = false;
@@ -295,7 +295,7 @@ main(int argc, char **argv)
       printf("pgprtdbg: Could not bind to %s:%d\n", config->host, config->port);
       exit(1);
    }
-   
+
    if (main_fds_length > MAX_FDS)
    {
       printf("pgprtdbg: Too many descriptors %d\n", main_fds_length);
@@ -385,7 +385,7 @@ main(int argc, char **argv)
 }
 
 static void
-accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
+accept_cb(struct ev_loop* loop, struct ev_io* watcher, int revents)
 {
    struct sockaddr_in client_addr;
    socklen_t client_addr_length;
@@ -407,7 +407,7 @@ accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
    }
 
    client_addr_length = sizeof(client_addr);
-   client_fd = accept(watcher->fd, (struct sockaddr *)&client_addr, &client_addr_length);
+   client_fd = accept(watcher->fd, (struct sockaddr*)&client_addr, &client_addr_length);
    if (client_fd == -1)
    {
       return;
@@ -426,14 +426,14 @@ accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 
 
 static void
-shutdown_cb(struct ev_loop *loop, ev_signal *w, int revents)
+shutdown_cb(struct ev_loop* loop, ev_signal* w, int revents)
 {
    ev_break(loop, EVBREAK_ALL);
    keep_running = 0;
 }
 
 static void
-coredump_cb(struct ev_loop *loop, ev_signal *w, int revents)
+coredump_cb(struct ev_loop* loop, ev_signal* w, int revents)
 {
    abort();
 }

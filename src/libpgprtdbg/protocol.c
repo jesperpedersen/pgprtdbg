@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2022 Red Hat
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list
  * of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this
  * list of conditions and the following disclaimer in the documentation and/or other
  * materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the copyright holder nor the names of its contributors may
  * be used to endorse or promote products derived from this software without specific
  * prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -408,7 +408,7 @@ fe_zero(int client_fd, char** text)
    int32_t request;
 
    request = pgprtdbg_read_int32(data + 4);
-   
+
    pgprtdbg_log_line("FE: 0");
    pgprtdbg_log_line("    Request: %d", request);
 
@@ -439,12 +439,12 @@ fe_zero(int client_fd, char** text)
             array[counter] = (char*)malloc(end - start);
             memset(array[counter], 0, end - start);
             memcpy(array[counter], data + start, end - start);
-               
+
             start = end;
             counter++;
          }
       }
-         
+
       for (int i = 0; i < counter; i++)
       {
          pgprtdbg_log_line("    Data: %s", array[i]);
@@ -848,7 +848,7 @@ be_C(char** text)
 
    str = pgprtdbg_read_string(data + o);
    o += strlen(str) + 1;
-   
+
    pgprtdbg_log_line("BE: C");
    pgprtdbg_log_line("    Tag: %s", str);
 }
@@ -1185,7 +1185,7 @@ be_Z(char** text)
 
    buf[0] = pgprtdbg_read_byte(data + o);
    o += 1;
-   
+
    pgprtdbg_log_line("BE: Z");
    pgprtdbg_log_line("    State: %s", buf);
 }
