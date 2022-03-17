@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2022 Red Hat
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list
  * of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this
  * list of conditions and the following disclaimer in the documentation and/or other
  * materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the copyright holder nor the names of its contributors may
  * be used to endorse or promote products derived from this software without specific
  * prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -45,12 +45,12 @@
 volatile int running = 1;
 volatile int exit_code = WORKER_FAILURE;
 
-static void sigquit_cb(struct ev_loop *loop, ev_signal *w, int revents);
+static void sigquit_cb(struct ev_loop* loop, ev_signal* w, int revents);
 
 void
 pgprtdbg_worker(int client_fd)
 {
-   struct ev_loop *loop = NULL;
+   struct ev_loop* loop = NULL;
    struct ev_signal signal_watcher;
    struct worker_io client_io;
    struct worker_io server_io;
@@ -92,15 +92,15 @@ pgprtdbg_worker(int client_fd)
    {
       atomic_fetch_add(&config->active_connections, 1);
       connected = true;
-      
+
       ev_io_init((struct ev_io*)&client_io, pipeline_client, client_fd, EV_READ);
       client_io.client_fd = client_fd;
       client_io.server_fd = server_fd;
-      
+
       ev_io_init((struct ev_io*)&server_io, pipeline_server, server_fd, EV_READ);
       server_io.client_fd = client_fd;
       server_io.server_fd = server_fd;
-      
+
       loop = ev_loop_new(pgprtdbg_libev(config->libev));
 
       ev_signal_init(&signal_watcher, sigquit_cb, SIGQUIT);
@@ -159,7 +159,7 @@ pgprtdbg_worker(int client_fd)
 }
 
 static void
-sigquit_cb(struct ev_loop *loop, ev_signal *w, int revents)
+sigquit_cb(struct ev_loop* loop, ev_signal* w, int revents)
 {
    exit_code = WORKER_FAILURE;
    running = 0;

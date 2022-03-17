@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2022 Red Hat
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list
  * of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this
  * list of conditions and the following disclaimer in the documentation and/or other
  * materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the copyright holder nor the names of its contributors may
  * be used to endorse or promote products derived from this software without specific
  * prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -58,9 +58,9 @@ static int bind_host(const char* hostname, int port, int** fds, int* length);
 int
 pgprtdbg_bind(const char* hostname, int port, int** fds, int* length)
 {
-   struct ifaddrs *ifaddr, *ifa;
-   struct sockaddr_in *sa4;
-   struct sockaddr_in6 *sa6;
+   struct ifaddrs* ifaddr, * ifa;
+   struct sockaddr_in* sa4;
+   struct sockaddr_in6* sa6;
    char addr[50];
    int* star_fds = NULL;
    int star_length = 0;
@@ -93,7 +93,7 @@ pgprtdbg_bind(const char* hostname, int port, int** fds, int* length)
             }
             else
             {
-               sa6 = (struct sockaddr_in6 *) ifa->ifa_addr;
+               sa6 = (struct sockaddr_in6*) ifa->ifa_addr;
                inet_ntop(AF_INET6, &sa6->sin6_addr, addr, sizeof(addr));
             }
 
@@ -136,7 +136,7 @@ pgprtdbg_bind(const char* hostname, int port, int** fds, int* length)
 int
 pgprtdbg_connect(const char* hostname, int port, int* fd)
 {
-   struct addrinfo hints, *servinfo, *p;
+   struct addrinfo hints, * servinfo, * p;
    int yes = 1;
    socklen_t optlen = sizeof(int);
    int rv;
@@ -241,7 +241,7 @@ pgprtdbg_disconnect(int fd)
  *
  */
 int
-pgprtdbg_bind_unix_socket(const char* directory, const char* file, int *fd)
+pgprtdbg_bind_unix_socket(const char* directory, const char* file, int* fd)
 {
    int status;
    char buf[107];
@@ -378,10 +378,10 @@ pgprtdbg_socket_buffers(int fd)
 static int
 bind_host(const char* hostname, int port, int** fds, int* length)
 {
-   int *result = NULL;
+   int* result = NULL;
    int index, size;
    int sockfd;
-   struct addrinfo hints, *servinfo, *addr;
+   struct addrinfo hints, * servinfo, * addr;
    int yes = 1;
    int rv;
    char* sport;

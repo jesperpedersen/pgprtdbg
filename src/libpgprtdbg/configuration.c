@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2022 Red Hat
- * 
+ *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice, this list
  * of conditions and the following disclaimer.
- * 
+ *
  * 2. Redistributions in binary form must reproduce the above copyright notice, this
  * list of conditions and the following disclaimer in the documentation and/or other
  * materials provided with the distribution.
- * 
+ *
  * 3. Neither the name of the copyright holder nor the names of its contributors may
  * be used to endorse or promote products derived from this software without specific
  * prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
  * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -101,7 +101,7 @@ pgprtdbg_read_configuration(char* filename)
 
    if (!file)
       return 1;
-    
+
    memset(&section, 0, LINE_LENGTH);
    config = (struct configuration*)shmem;
 
@@ -447,12 +447,14 @@ extract_key_value(char* str, char** key, char** value)
    }
 }
 
-static int as_int(char* str)
+static int
+as_int(char* str)
 {
    return atoi(str);
 }
 
-static bool as_bool(char* str)
+static bool
+as_bool(char* str)
 {
    if (!strcasecmp(str, "true"))
       return true;
@@ -475,7 +477,8 @@ static bool as_bool(char* str)
    return false;
 }
 
-static int as_logging_type(char* str)
+static int
+as_logging_type(char* str)
 {
    if (!strcasecmp(str, "console"))
       return PGPRTDBG_LOGGING_TYPE_CONSOLE;
