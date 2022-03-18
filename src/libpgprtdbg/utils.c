@@ -68,7 +68,7 @@ pgprtdbg_read_int16(void* data)
                             *((unsigned char*)(data + 1))};
 
    int16_t res = (int16_t)((bytes[0] << 8)) |
-                 ((bytes[1]     ));
+                 ((bytes[1]));
 
    return res;
 }
@@ -83,8 +83,8 @@ pgprtdbg_read_int32(void* data)
 
    int32_t res = (int32_t)((bytes[0] << 24)) |
                  ((bytes[1] << 16)) |
-                 ((bytes[2] <<  8)) |
-                 ((bytes[3]      ));
+                 ((bytes[2] << 8)) |
+                 ((bytes[3]));
 
    return res;
 }
@@ -107,8 +107,8 @@ pgprtdbg_read_long(void* data)
               (((long)bytes[3]) << 32) |
               (((long)bytes[4]) << 24) |
               (((long)bytes[5]) << 16) |
-              (((long)bytes[6]) <<  8) |
-              (((long)bytes[7])      );
+              (((long)bytes[6]) << 8) |
+              (((long)bytes[7]));
 
    return res;
 }
@@ -118,7 +118,6 @@ pgprtdbg_read_string(void* data)
 {
    return (char*)data;
 }
-
 
 void
 pgprtdbg_write_byte(void* data, signed char b)

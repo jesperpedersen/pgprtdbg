@@ -154,7 +154,8 @@ pgprtdbg_connect(const char* hostname, int port, int* fd)
    hints.ai_family = AF_UNSPEC;
    hints.ai_socktype = SOCK_STREAM;
 
-   if ((rv = getaddrinfo(hostname, sport, &hints, &servinfo)) != 0) {
+   if ((rv = getaddrinfo(hostname, sport, &hints, &servinfo)) != 0)
+   {
       free(sport);
       fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
       return 1;

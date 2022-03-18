@@ -84,4 +84,3 @@ pgprtdbg_log_mem(void* data, size_t size);
 #endif
 
 #endif
-

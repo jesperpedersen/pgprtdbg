@@ -206,7 +206,8 @@ read_message(int socket, bool block, struct message** msg)
             keep_read = false;
          }
       }
-   } while (keep_read);
+   }
+   while (keep_read);
 
    return MESSAGE_STATUS_ERROR;
 }
@@ -260,7 +261,8 @@ write_message(int socket, struct message* msg)
                break;
          }
       }
-   } while (keep_write);
+   }
+   while (keep_write);
 
    return MESSAGE_STATUS_ERROR;
 }

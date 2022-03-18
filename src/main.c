@@ -169,7 +169,7 @@ main(int argc, char** argv)
    {
       static struct option long_options[] =
       {
-         {"config",  required_argument, 0, 'c'},
+         {"config", required_argument, 0, 'c'},
          {"daemon", no_argument, 0, 'd'},
          {"version", no_argument, 0, 'V'},
          {"help", no_argument, 0, '?'}
@@ -231,7 +231,6 @@ main(int argc, char** argv)
          exit(1);
       }
    }
-
 
    if (pgprtdbg_validate_configuration())
    {
@@ -423,7 +422,6 @@ accept_cb(struct ev_loop* loop, struct ev_io* watcher, int revents)
 
    pgprtdbg_disconnect(client_fd);
 }
-
 
 static void
 shutdown_cb(struct ev_loop* loop, ev_signal* w, int revents)

@@ -340,7 +340,7 @@ output_write(char* id, int from, int to, signed char kind, char* text)
 
    sem_wait(&config->lock);
 
-   if ((kind >= 'A' && kind <= 'Z') || (kind >= 'a' && kind <= 'z')  || (kind >= '0' && kind <= '9') || kind == '?')
+   if ((kind >= 'A' && kind <= 'Z') || (kind >= 'a' && kind <= 'z') || (kind >= '0' && kind <= '9') || kind == '?')
    {
       if (text != NULL)
       {
