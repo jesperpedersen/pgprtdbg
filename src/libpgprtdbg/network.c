@@ -178,6 +178,9 @@ pgprtdbg_connect(const char* hostname, int port, int* fd)
       {
          if (setsockopt(*fd, SOL_SOCKET, SO_KEEPALIVE, &yes, optlen) == -1)
          {
+            pgprtdbg_log_lock();
+            pgprtdbg_log_line("pgprtdbg_connect: so_keep_alive: %s", strerror(errno));
+            pgprtdbg_log_unlock();
             pgprtdbg_disconnect(*fd);
             return 1;
          }
@@ -187,6 +190,9 @@ pgprtdbg_connect(const char* hostname, int port, int* fd)
       {
          if (setsockopt(*fd, IPPROTO_TCP, TCP_NODELAY, &yes, optlen) == -1)
          {
+            pgprtdbg_log_lock();
+            pgprtdbg_log_line("pgprtdbg_connect: tcp_nodelay: %s", strerror(errno));
+            pgprtdbg_log_unlock();
             pgprtdbg_disconnect(*fd);
             return 1;
          }
@@ -194,18 +200,27 @@ pgprtdbg_connect(const char* hostname, int port, int* fd)
 
       if (setsockopt(*fd, SOL_SOCKET, SO_RCVBUF, &config->buffer_size, optlen) == -1)
       {
+         pgprtdbg_log_lock();
+         pgprtdbg_log_line("pgprtdbg_connect: so_rcvbuf: %s", strerror(errno));
+         pgprtdbg_log_unlock();
          pgprtdbg_disconnect(*fd);
          return 1;
       }
 
       if (setsockopt(*fd, SOL_SOCKET, SO_SNDBUF, &config->buffer_size, optlen) == -1)
       {
+         pgprtdbg_log_lock();
+         pgprtdbg_log_line("pgprtdbg_connect: so_sndbuf: %s", strerror(errno));
+         pgprtdbg_log_unlock();
          pgprtdbg_disconnect(*fd);
          return 1;
       }
 
       if (connect(*fd, p->ai_addr, p->ai_addrlen) == -1)
       {
+         pgprtdbg_log_lock();
+         pgprtdbg_log_line("pgprtdbg_connect: %s", strerror(errno));
+         pgprtdbg_log_unlock();
          pgprtdbg_disconnect(*fd);
          return 1;
       }
