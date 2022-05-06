@@ -48,10 +48,14 @@ pgprtdbg_memory_init(void)
    config = (struct configuration*)shmem;
 
    if (!message)
+   {
       message = (struct message*)malloc(sizeof(struct message));
+   }
 
    if (!data)
+   {
       data = malloc((size_t)config->buffer_size);
+   }
 
    memset(message, 0, sizeof(struct message));
    memset(data, 0, (size_t)config->buffer_size);

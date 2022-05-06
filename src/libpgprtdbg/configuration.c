@@ -100,7 +100,9 @@ pgprtdbg_read_configuration(char* filename)
    file = fopen(filename, "r");
 
    if (!file)
+   {
       return 1;
+   }
 
    memset(&section, 0, LINE_LENGTH);
    config = (struct configuration*)shmem;
@@ -117,7 +119,9 @@ pgprtdbg_read_configuration(char* filename)
                memset(&section, 0, LINE_LENGTH);
                max = ptr - line - 1;
                if (max > MISC_LENGTH - 1)
+               {
                   max = MISC_LENGTH - 1;
+               }
                memcpy(&section, line + 1, max);
                if (strcmp(section, "pgprtdbg"))
                {
@@ -158,18 +162,24 @@ pgprtdbg_read_configuration(char* filename)
                   {
                      max = strlen(value);
                      if (max > MISC_LENGTH - 1)
+                     {
                         max = MISC_LENGTH - 1;
+                     }
                      memcpy(config->host, value, max);
                   }
                   else if (strlen(section) > 0)
                   {
                      max = strlen(section);
                      if (max > MISC_LENGTH - 1)
+                     {
                         max = MISC_LENGTH - 1;
+                     }
                      memcpy(&srv.name, section, max);
                      max = strlen(value);
                      if (max > MISC_LENGTH - 1)
+                     {
                         max = MISC_LENGTH - 1;
+                     }
                      memcpy(&srv.host, value, max);
                   }
                   else
@@ -199,7 +209,9 @@ pgprtdbg_read_configuration(char* filename)
                   {
                      max = strlen(value);
                      if (max > MISC_LENGTH - 1)
+                     {
                         max = MISC_LENGTH - 1;
+                     }
                      memcpy(config->output, value, max);
                   }
                   else
@@ -235,7 +247,9 @@ pgprtdbg_read_configuration(char* filename)
                   {
                      max = strlen(value);
                      if (max > MISC_LENGTH - 1)
+                     {
                         max = MISC_LENGTH - 1;
+                     }
                      memcpy(config->unix_socket_dir, value, max);
                   }
                   else
@@ -260,7 +274,9 @@ pgprtdbg_read_configuration(char* filename)
                   {
                      max = strlen(value);
                      if (max > MISC_LENGTH - 1)
+                     {
                         max = MISC_LENGTH - 1;
+                     }
                      memcpy(config->log_path, value, max);
                   }
                   else
@@ -274,7 +290,9 @@ pgprtdbg_read_configuration(char* filename)
                   {
                      max = strlen(value);
                      if (max > MISC_LENGTH - 1)
+                     {
                         max = MISC_LENGTH - 1;
+                     }
                      memcpy(config->libev, value, max);
                   }
                   else
@@ -457,22 +475,34 @@ static bool
 as_bool(char* str)
 {
    if (!strcasecmp(str, "true"))
+   {
       return true;
+   }
 
    if (!strcasecmp(str, "on"))
+   {
       return true;
+   }
 
    if (!strcasecmp(str, "1"))
+   {
       return true;
+   }
 
    if (!strcasecmp(str, "false"))
+   {
       return false;
+   }
 
    if (!strcasecmp(str, "off"))
+   {
       return false;
+   }
 
    if (!strcasecmp(str, "0"))
+   {
       return false;
+   }
 
    return false;
 }
@@ -481,10 +511,14 @@ static int
 as_logging_type(char* str)
 {
    if (!strcasecmp(str, "console"))
+   {
       return PGPRTDBG_LOGGING_TYPE_CONSOLE;
+   }
 
    if (!strcasecmp(str, "file"))
+   {
       return PGPRTDBG_LOGGING_TYPE_FILE;
+   }
 
    return 0;
 }

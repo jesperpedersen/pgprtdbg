@@ -174,7 +174,9 @@ pipeline_server(struct ev_loop* loop, struct ev_io* watcher, int revents)
          fatal = false;
 
          if (!strncmp(msg->data + 6, "FATAL", 5) || !strncmp(msg->data + 6, "PANIC", 5))
+         {
             fatal = true;
+         }
 
          if (!strncmp(msg->data + 20, "0A000", 5))
          {

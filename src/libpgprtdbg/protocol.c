@@ -421,7 +421,9 @@ fe_zero(int client_fd, char** text)
       {
          c = pgprtdbg_read_byte(data + i);
          if (c == 0)
+         {
             counter++;
+         }
       }
 
       array = (char**)malloc(sizeof(char*) * counter);
