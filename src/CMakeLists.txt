@@ -34,6 +34,10 @@ add_compile_options(-D__USE_ISOC11)
 add_compile_options(-D_GNU_SOURCE)
 add_compile_options(-O2)
 
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+  add_compile_options(-D_DARWIN_C_SOURCE)
+endif()
+
 if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-march=native)
   add_compile_options(-mtune=native)

@@ -9,7 +9,7 @@ on:
     - master
 
 jobs:
-  build:
+  build-linux:
 
     runs-on: ubuntu-latest
     
@@ -32,3 +32,28 @@ jobs:
     - name: make
       run: make
       working-directory: /home/runner/work/pgprtdbg/pgprtdbg/build/
+
+
+  build-macos:
+
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Homebrew
+      run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+    - name: Update system
+      run: brew update
+    - name: Install libev
+      run: brew install libev
+    - name: Install clang
+      run: brew install llvm
+    - name: mkdir
+      run: mkdir build
+      working-directory: /Users/runner/work/pgprtdbg/pgprtdbg/
+    - name: cmake
+      run: cmake -DCMAKE_BUILD_TYPE=Debug ..
+      working-directory: /Users/runner/work/pgprtdbg/pgprtdbg/build/
+    - name: make
+      run: make
+      working-directory: /Users/runner/work/pgprtdbg/pgprtdbg/build/
