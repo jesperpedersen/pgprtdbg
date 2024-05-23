@@ -26,37 +26,50 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PGPRTDBG_PROTOCOL_H
-#define PGPRTDBG_PROTOCOL_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+/* pgprtdbg */
 #include <pgprtdbg.h>
+#include <counter.h>
 
-#include <stdlib.h>
+/* system */
+#include <sys/mman.h>
 
-/**
- * Decode a message from the client
- * @param from The from socket
- * @param to The to socket
- * @param msg The message
- */
-void
-pgprtdbg_client(int from, int to, struct message* msg, struct event_counter* counter);
+size_t event_counters_offset = sizeof(struct configuration);
 
-/**
- * Decode a message from the server
- * @param from The from socket
- * @param to The to socket
- * @param msg The message
- */
-void
-pgprtdbg_server(int from, int to, struct message* msg, struct event_counter* counter);
-
-#ifdef __cplusplus
+struct event_counter*
+pgprtdbg_counter_get(int client_number)
+{
+   struct event_counter* event_counters = (struct event_counter*) (shmem + event_counters_offset);
+   struct event_counter* counter = &(event_counters[client_number]);
+   return counter;
 }
-#endif
 
-#endif
+void
+pgprtdbg_counter_output_statistics(int client_count)
+{
+   FILE* output_file = stdout;
+   struct configuration* config;
+   struct event_counter* event_counters = (struct event_counter*) (shmem + event_counters_offset);
+   struct event_counter counter;
+
+   config = (struct configuration*) shmem;
+
+   if (strlen(config->statistics_output) > 1)
+   {
+      output_file = fopen(config->statistics_output, "w");
+   }
+
+   fprintf(output_file, "------------------------------\n");
+   for (int client = 0; client < client_count; client++)
+   {
+      counter = event_counters[client];
+      fprintf(output_file, "Client:                  %d\n", client + 1);
+      fprintf(output_file, "Bytes Sent:              %ld\n", counter.sent_bytes);
+      fprintf(output_file, "Messages Sent:           %d\n", counter.sent_messages);
+      fprintf(output_file, "Bytes Received:          %ld\n", counter.rcvd_bytes);
+      fprintf(output_file, "Messages Received:       %d\n", counter.rcvd_messages);
+      if (client + 1 < client_count)
+      {
+         fprintf(output_file, "------------------------------\n");
+      }
+   }
+}

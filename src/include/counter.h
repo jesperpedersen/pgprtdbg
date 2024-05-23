@@ -26,37 +26,38 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PGPRTDBG_PROTOCOL_H
-#define PGPRTDBG_PROTOCOL_H
+#ifndef PGPRTDBG_COUNTER_H
+#define PGPRTDBG_COUNTER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <inttypes.h>
 
-#include <pgprtdbg.h>
+#define MAX_NUMBER_OF_COUNTERS MAX_NUMBER_OF_CONNECTIONS
 
-#include <stdlib.h>
+/** @struct
+ * Holds collected events for one client.
+ */
+struct event_counter
+{
+   int client_number;
+   uint64_t rcvd_bytes;
+   uint64_t sent_bytes;
+   uint32_t rcvd_messages;
+   uint32_t sent_messages;
+};
+
+extern size_t event_counters_offset;
 
 /**
- * Decode a message from the client
- * @param from The from socket
- * @param to The to socket
- * @param msg The message
+ * Gets a new event_counter.
+ * @return Pointer to the next struct event_counter.
  */
-void
-pgprtdbg_client(int from, int to, struct message* msg, struct event_counter* counter);
+struct event_counter*
+pgprtdbg_counter_get(int client_number);
 
 /**
- * Decode a message from the server
- * @param from The from socket
- * @param to The to socket
- * @param msg The message
+ * Outputs the statistics for all counters.
  */
 void
-pgprtdbg_server(int from, int to, struct message* msg, struct event_counter* counter);
+pgprtdbg_counter_output_statistics(int client_count);
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+#endif //PGPRTDBG_COUNTER_H

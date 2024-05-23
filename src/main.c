@@ -34,6 +34,7 @@
 #include <shmem.h>
 #include <utils.h>
 #include <worker.h>
+#include <counter.h>
 
 /* system */
 #include <errno.h>
@@ -74,6 +75,7 @@ static struct accept_io io_uds;
 static int unix_pgsql_socket = -1;
 static int* main_fds = NULL;
 static int main_fds_length;
+static int client_number = 0;
 
 static void
 start_io(void)
@@ -160,7 +162,8 @@ main(int argc, char** argv)
    bool daemon = false;
    pid_t pid, sid;
    struct ev_signal signal_watcher[6];
-   size_t size;
+   size_t configuration_size;
+   size_t event_counters_size;
    char pgsql[MISC_LENGTH];
    struct configuration* config = NULL;
    int c;
@@ -209,8 +212,9 @@ main(int argc, char** argv)
       exit(1);
    }
 
-   size = sizeof(struct configuration);
-   if (pgprtdbg_create_shared_memory(size))
+   configuration_size = sizeof(struct configuration);
+   event_counters_size = sizeof(struct event_counter) * (MAX_NUMBER_OF_COUNTERS + 1); /* +1 to prevent overflow */
+   if (pgprtdbg_create_shared_memory(configuration_size + event_counters_size))
    {
       printf("pgagroal: Error in creating shared memory\n");
       exit(1);
@@ -340,7 +344,8 @@ main(int argc, char** argv)
    }
    pgprtdbg_libev_engines();
    pgprtdbg_log_line("libev engine: %s", pgprtdbg_libev_engine(ev_backend(main_loop)));
-   pgprtdbg_log_line("Configuration size: %lu", size);
+   pgprtdbg_log_line("Configuration size: %lu", configuration_size);
+   pgprtdbg_log_line("Event counters size: %lu", event_counters_size);
    pgprtdbg_log_unlock();
 
    while (keep_running)
@@ -375,12 +380,14 @@ main(int argc, char** argv)
 
    free(main_fds);
 
+   pgprtdbg_counter_output_statistics(client_number);
+
    /* Close file */
    fflush(config->file);
    fclose(config->file);
 
    pgprtdbg_stop_logging();
-   pgprtdbg_destroy_shared_memory(size);
+   pgprtdbg_destroy_shared_memory(configuration_size + event_counters_size);
 
    return 0;
 }
@@ -419,7 +426,20 @@ accept_cb(struct ev_loop* loop, struct ev_io* watcher, int revents)
       ev_loop_fork(loop);
       shutdown_io();
       pgprtdbg_disconnect(ai->socket);
-      pgprtdbg_worker(client_fd);
+      pgprtdbg_worker(client_fd, client_number);
+   }
+
+   /* event_counters array is initialized with size MAX_NUMBER_OF_COUNTERS + 1 and client_number will be
+    * mostly at the last element, which is ignored in output statistics */
+   if (client_number < MAX_NUMBER_OF_COUNTERS)
+   {
+      client_number++;
+   }
+   else  /* past this, everything will be dumped in the trash counter */
+   {
+      pgprtdbg_log_lock();
+      pgprtdbg_log_line("pgprtdbg: maximum number of counters reached.\n");
+      pgprtdbg_log_unlock();
    }
 
    pgprtdbg_disconnect(client_fd);

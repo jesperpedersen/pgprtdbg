@@ -50,6 +50,7 @@ struct worker_io
    struct ev_io io;      /**< The libev base type */
    int client_fd;        /**< The client descriptor */
    int server_fd;        /**< The server descriptor */
+   struct event_counter* counter;
 };
 
 extern volatile int running;
@@ -58,9 +59,10 @@ extern volatile int exit_code;
 /**
  * Create a worker instance
  * @param fd The client descriptor
+ * @param client_number The number of the client, from 0 to MAX_NUMBER_OF_COUNTERS - 1
  */
 void
-pgprtdbg_worker(int fd);
+pgprtdbg_worker(int fd, int client_number);
 
 #ifdef __cplusplus
 }

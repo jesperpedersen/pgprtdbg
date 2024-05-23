@@ -75,6 +75,8 @@ pgprtdbg_init_configuration(void)
 
    config->file = NULL;
 
+   *config->statistics_output = 0;
+
    atomic_init(&config->active_connections, 0);
 
    return 0;
@@ -343,6 +345,22 @@ pgprtdbg_read_configuration(char* filename)
                   if (!strcmp(section, "pgprtdbg"))
                   {
                      config->backlog = as_int(value);
+                  }
+                  else
+                  {
+                     unknown = true;
+                  }
+               }
+               else if (!strcmp(key, "statistics_output"))
+               {
+                  if (!strcmp(section, "pgprtdbg"))
+                  {
+                     max = strlen(value);
+                     if (max > MISC_LENGTH - 1)
+                     {
+                        max = MISC_LENGTH - 1;
+                     }
+                     memcpy(config->statistics_output, value, max);
                   }
                   else
                   {

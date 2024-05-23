@@ -34,6 +34,7 @@
 #include <protocol.h>
 #include <worker.h>
 #include <utils.h>
+#include <counter.h>
 
 /* system */
 #include <ev.h>
@@ -96,7 +97,7 @@ static size_t new_data_size = 0;
 static void* data = NULL;
 
 void
-pgprtdbg_client(int from, int to, struct message* msg)
+pgprtdbg_client(int from, int to, struct message* msg, struct event_counter* counter)
 {
    char* text = NULL;
 
@@ -105,6 +106,9 @@ pgprtdbg_client(int from, int to, struct message* msg)
 
    pgprtdbg_log_line("FE/Message (%d):", msg->length);
    pgprtdbg_log_mem(msg->data, msg->length);
+
+   counter->sent_messages++;
+   counter->sent_bytes += msg->length;
 
    data = pgprtdbg_data_append(data, data_size, msg->data, msg->length, &new_data_size);
    data_size = new_data_size;
@@ -198,7 +202,7 @@ done:
 }
 
 void
-pgprtdbg_server(int from, int to, struct message* msg)
+pgprtdbg_server(int from, int to, struct message* msg, struct event_counter* counter)
 {
    char* text = NULL;
 
@@ -207,6 +211,9 @@ pgprtdbg_server(int from, int to, struct message* msg)
 
    pgprtdbg_log_line("BE/Message (%d):", msg->length);
    pgprtdbg_log_mem(msg->data, msg->length);
+
+   counter->rcvd_messages++;
+   counter->rcvd_bytes += msg->length;
 
    data = pgprtdbg_data_append(data, data_size, msg->data, msg->length, &new_data_size);
    data_size = new_data_size;

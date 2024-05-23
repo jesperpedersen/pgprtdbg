@@ -90,6 +90,8 @@ struct configuration
    FILE* file;               /**< The file */
    sem_t lock;               /**< The file lock */
 
+   char statistics_output[MISC_LENGTH];
+
    bool output_sockets;      /**< Output socket identifiers */
    bool save_traffic;        /**< Save the traffic in files */
 

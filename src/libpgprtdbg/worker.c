@@ -35,6 +35,7 @@
 #include <pipeline.h>
 #include <worker.h>
 #include <utils.h>
+#include <counter.h>
 
 /* system */
 #include <ev.h>
@@ -48,10 +49,11 @@ volatile int exit_code = WORKER_FAILURE;
 static void sigquit_cb(struct ev_loop* loop, ev_signal* w, int revents);
 
 void
-pgprtdbg_worker(int client_fd)
+pgprtdbg_worker(int client_fd, int client_number)
 {
    struct ev_loop* loop = NULL;
    struct ev_signal signal_watcher;
+   struct event_counter* counter;
    struct worker_io client_io;
    struct worker_io server_io;
    struct configuration* config;
@@ -67,6 +69,10 @@ pgprtdbg_worker(int client_fd)
 
    memset(&client_io, 0, sizeof(struct worker_io));
    memset(&server_io, 0, sizeof(struct worker_io));
+
+   counter = pgprtdbg_counter_get(client_number);
+   client_io.counter = counter;
+   server_io.counter = counter;
 
    for (int i = 0; i < MAX_NUMBER_OF_CONNECTIONS; i++)
    {

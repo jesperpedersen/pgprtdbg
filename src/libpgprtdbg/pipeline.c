@@ -57,7 +57,7 @@ pipeline_client(struct ev_loop* loop, struct ev_io* watcher, int revents)
    status = pgprtdbg_read_message(wi->client_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
    {
-      pgprtdbg_client(wi->client_fd, wi->server_fd, msg);
+      pgprtdbg_client(wi->client_fd, wi->server_fd, msg, wi->counter);
 
       if (config->save_traffic)
       {
@@ -156,7 +156,7 @@ pipeline_server(struct ev_loop* loop, struct ev_io* watcher, int revents)
    status = pgprtdbg_read_message(wi->server_fd, &msg);
    if (likely(status == MESSAGE_STATUS_OK))
    {
-      pgprtdbg_server(wi->server_fd, wi->client_fd, msg);
+      pgprtdbg_server(wi->server_fd, wi->client_fd, msg, wi->counter);
 
       if (config->save_traffic)
       {
