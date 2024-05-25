@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4.0)
+cmake_minimum_required(VERSION 3.11.0)
 
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "3")
@@ -31,6 +31,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 message(STATUS "pgprtdbg ${VERSION_STRING}")
+
+set(generation TRUE)
 
 include(CheckCCompilerFlag)
 include(CheckCSourceCompiles)
@@ -67,6 +69,23 @@ else ()
   message(FATAL_ERROR "math needed")
 endif (HAVE_LIB_M)
 
+find_package(Pandoc)
+if (PANDOC_FOUND)
+  message(STATUS "pandoc found")
+else ()
+  set(generation FALSE)
+  message(STATUS "pandoc needed. The generation process will be skipped.")
+endif()
+
+find_package(Pdflatex)
+if (PDFLATEX_FOUND)
+  message(STATUS "pdflatex found")
+else ()
+  set(generation FALSE)
+  message(STATUS "pdflatex needed. The generation process will be skipped.")
+endif()
+
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/src/")
 
+add_subdirectory(doc)
 add_subdirectory(src)
