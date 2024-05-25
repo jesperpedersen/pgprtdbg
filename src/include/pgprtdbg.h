@@ -59,9 +59,9 @@ extern "C" {
 #define unlikely(x)  __builtin_expect (!!(x), 0)
 
 #define MIN(a, b)               \
-   ({ __typeof__ (a) _a = (a);  \
-      __typeof__ (b) _b = (b);  \
-      _a < _b ? _a : _b; })
+        ({ __typeof__ (a) _a = (a);  \
+           __typeof__ (b) _b = (b);  \
+           _a < _b ? _a : _b; })
 
 /**
  * The shared memory segment
