@@ -34,8 +34,13 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 
 %{__install} -m 644 %{_builddir}/%{name}-%{version}/LICENSE %{buildroot}%{_docdir}/%{name}/LICENSE
 %{__install} -m 644 %{_builddir}/%{name}-%{version}/README.md %{buildroot}%{_docdir}/%{name}/README.md
+%{__install} -m 644 %{_builddir}/%{name}-%{version}/CODE_OF_CONDUCT.md %{buildroot}%{_docdir}/%{name}/CODE_OF_CONDUCT.md
+%{__install} -m 644 %{_builddir}/%{name}-%{version}/CONTRIBUTING.md %{buildroot}%{_docdir}/%{name}/CONTRIBUTING.md
 %{__install} -m 644 %{_builddir}/%{name}-%{version}/doc/CONFIGURATION.md %{buildroot}%{_docdir}/%{name}/CONFIGURATION.md
+%{__install} -m 644 %{_builddir}/%{name}-%{version}/doc/DEVELOPERS.md %{buildroot}%{_docdir}/%{name}/DEVELOPERS.md
+%{__install} -m 644 %{_builddir}/%{name}-%{version}/doc/DISTRIBUTIONS.md %{buildroot}%{_docdir}/%{name}/DISTRIBUTIONS.md
 %{__install} -m 644 %{_builddir}/%{name}-%{version}/doc/GETTING_STARTED.md %{buildroot}%{_docdir}/%{name}/GETTING_STARTED.md
+%{__install} -m 644 %{_builddir}/%{name}-%{version}/doc/PR_GUIDE.md %{buildroot}%{_docdir}/%{name}/PR_GUIDE.md
 %{__install} -m 644 %{_builddir}/%{name}-%{version}/doc/RPM.md %{buildroot}%{_docdir}/%{name}/RPM.md
 
 %{__install} -m 644 %{_builddir}/%{name}-%{version}/doc/etc/pgprtdbg.conf %{buildroot}%{_sysconfdir}/pgprtdbg.conf
@@ -52,8 +57,12 @@ cd %{buildroot}%{_libdir}/
 
 %files
 %license %{_docdir}/%{name}/LICENSE
+%{_docdir}/%{name}/CODE_OF_CONDUCT.md
 %{_docdir}/%{name}/CONFIGURATION.md
+%{_docdir}/%{name}/CONTRIBUTING.md
+%{_docdir}/%{name}/DEVELOPERS.md
 %{_docdir}/%{name}/GETTING_STARTED.md
+%{_docdir}/%{name}/PR_GUIDE.md
 %{_docdir}/%{name}/README.md
 %{_docdir}/%{name}/RPM.md
 %config %{_sysconfdir}/pgprtdbg.conf
